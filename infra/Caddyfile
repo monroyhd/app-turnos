@@ -1,0 +1,28 @@
+# Caddyfile para produccion
+
+:80 {
+    # Frontend SPA
+    root * /srv/frontend
+
+    # API proxy
+    handle /api/* {
+        reverse_proxy api:3000
+    }
+
+    # WebSocket para MQTT
+    handle /mqtt {
+        reverse_proxy mosquitto:9001
+    }
+
+    # Servir frontend
+    handle {
+        try_files {path} /index.html
+        file_server
+    }
+
+    # Logs
+    log {
+        output stdout
+        format console
+    }
+}
