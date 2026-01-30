@@ -1,5 +1,39 @@
 # Changelog - Sistema de Turnos Hospitalarios
 
+## [2026-01-30] - Fix: Error SSL en Instalación Docker
+
+### Problema
+Error al ejecutar seeds en instalación Docker:
+```
+Error: The server does not support SSL connections
+```
+
+### Causa
+- `NODE_ENV=production` activa SSL en la conexión a PostgreSQL
+- El contenedor PostgreSQL de Docker no tiene SSL habilitado
+
+### Solución
+
+#### backend/config/database.js
+- SSL ahora es configurable via variable `DB_SSL`
+- `DB_SSL=true` → habilita SSL (para cloud: Heroku, AWS RDS)
+- `DB_SSL=false` → deshabilita SSL (para Docker)
+- Agregada configuración `docker` específica
+
+#### docker-compose.yml
+- Agregado `DB_SSL: "false"` en environment del contenedor API
+
+### Uso
+```yaml
+# Docker (sin SSL)
+DB_SSL: "false"
+
+# Cloud con SSL
+DB_SSL: "true"
+```
+
+---
+
 ## [2026-01-30] - Correcciones Script Instalación Nativa
 
 ### Problema
@@ -26,12 +60,21 @@ listener 9001            # WebSocket (protegido por UFW)
 #### verify-installation.sh
 - Corregido grep de PM2: busca "app-turnos" o "online"
 
-#### setup-services.sh - Caddyfile fallback
-- Configuración fallback ahora incluye todas las características:
+#### setup-services.sh - Configuración Caddy mejorada
+- **Siempre respalda** Caddyfile existente con timestamp (ej: `Caddyfile.backup.20260130_123456`)
+- **Siempre crea** nueva configuración completa (no depende de archivo en config/)
+- Configuración incluye todas las características:
+  - Proxy `/api/*` para backend
+  - Proxy `/uploads/*` para archivos
   - Proxy `/mqtt-ws` para WebSocket MQTT
   - Headers de seguridad (X-Frame-Options, X-Content-Type-Options, etc.)
   - Compresión gzip/zstd
   - Cache para assets estáticos
+  - Manejo SPA (try_files)
+
+#### setup_docker/config/Caddyfile
+- Verificado que incluye todas las características necesarias
+- Usa nombres de contenedores Docker (api:3000, mosquitto:9001, frontend:80)
 
 ---
 

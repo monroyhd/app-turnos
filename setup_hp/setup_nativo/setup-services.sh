@@ -95,21 +95,19 @@ fi
 
 print_step "Configurando Caddy..."
 
-# Copiar configuración
-CADDY_CONF="$SCRIPT_DIR/config/Caddyfile"
-if [ -f "$CADDY_CONF" ]; then
-    backup_file /etc/caddy/Caddyfile
+# Respaldar Caddyfile existente si existe
+if [ -f /etc/caddy/Caddyfile ]; then
+    BACKUP_NAME="/etc/caddy/Caddyfile.backup.$(date +%Y%m%d_%H%M%S)"
+    cp /etc/caddy/Caddyfile "$BACKUP_NAME"
+    print_info "Caddyfile existente respaldado en: $BACKUP_NAME"
+fi
 
-    # Copiar y ajustar rutas si es necesario
-    cp "$CADDY_CONF" /etc/caddy/Caddyfile
+# Crear directorio si no existe
+mkdir -p /etc/caddy
 
-    # Reemplazar ruta del proyecto si es diferente
-    sed -i "s|/apps-node/app-turnos|$PROJECT_ROOT|g" /etc/caddy/Caddyfile
-
-    print_success "Configuración de Caddy copiada"
-else
-    print_warning "Archivo Caddyfile no encontrado, creando configuración completa..."
-    cat > /etc/caddy/Caddyfile << EOF
+# Crear configuración de Caddy para App-Turnos
+print_step "Creando configuración de Caddy para App-Turnos..."
+cat > /etc/caddy/Caddyfile << EOF
 # =============================================================================
 # Caddyfile - Configuración de Caddy para App-Turnos (Instalación Nativa)
 # =============================================================================
@@ -165,8 +163,8 @@ else
     header @static Cache-Control "public, max-age=31536000"
 }
 EOF
-    print_success "Configuración de Caddy creada"
-fi
+
+print_success "Configuración de Caddy creada"
 
 # Validar configuración
 print_step "Validando configuración de Caddy..."

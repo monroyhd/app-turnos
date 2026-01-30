@@ -84,6 +84,7 @@ services:
       DB_NAME: app_turnos
       DB_USER: postgres
       DB_PASSWORD: ${DB_PASSWORD:-postgres123}
+      DB_SSL: "false"
       # MQTT
       MQTT_HOST: mosquitto
       MQTT_PORT: 1883
