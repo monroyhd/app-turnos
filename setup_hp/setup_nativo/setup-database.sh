@@ -109,7 +109,7 @@ EOF
 print_success "Permisos otorgados"
 
 # =============================================================================
-# Configurar archivo .env del backend
+# Configurar archivo .env del backend (ANTES de npm install)
 # =============================================================================
 
 print_step "Configurando variables de entorno..."
@@ -118,15 +118,18 @@ BACKEND_DIR="$PROJECT_ROOT/backend"
 ENV_FILE="$BACKEND_DIR/.env"
 ENV_TEMPLATE="$SCRIPT_DIR/config/.env.production"
 
+# Generar JWT secret una sola vez
+JWT_SECRET=$(generate_jwt_secret)
+
 if [ -f "$ENV_TEMPLATE" ]; then
     # Copiar template
     cp "$ENV_TEMPLATE" "$ENV_FILE"
 
     # Reemplazar valores
     sed -i "s|GENERATED_DB_PASSWORD|$DB_PASSWORD|g" "$ENV_FILE"
-    sed -i "s|GENERATED_JWT_SECRET|$(generate_jwt_secret)|g" "$ENV_FILE"
+    sed -i "s|GENERATED_JWT_SECRET|$JWT_SECRET|g" "$ENV_FILE"
 
-    print_success "Archivo .env configurado"
+    print_success "Archivo .env configurado desde template"
 else
     print_warning "Template .env no encontrado, creando manualmente..."
 
@@ -139,8 +142,9 @@ DB_PORT=5432
 DB_NAME=$DB_NAME
 DB_USER=$DB_USER
 DB_PASSWORD=$DB_PASSWORD
+DB_SSL=false
 
-JWT_SECRET=$(generate_jwt_secret)
+JWT_SECRET=$JWT_SECRET
 JWT_EXPIRES_IN=24h
 
 MQTT_HOST=localhost
@@ -155,6 +159,14 @@ EOF
     print_success "Archivo .env creado"
 fi
 
+# Verificar que el archivo .env existe y tiene contenido
+if [ -s "$ENV_FILE" ]; then
+    print_success "Archivo .env verificado: $ENV_FILE"
+else
+    print_error "Archivo .env está vacío o no existe"
+    exit 1
+fi
+
 # =============================================================================
 # Instalar dependencias del backend
 # =============================================================================
@@ -164,7 +176,14 @@ print_step "Instalando dependencias del backend..."
 cd "$BACKEND_DIR"
 
 if [ -f "package.json" ]; then
-    npm install
+    # Usar --unsafe-perm para evitar problemas al ejecutar como root
+    npm install --unsafe-perm 2>&1 || {
+        print_warning "npm install con --unsafe-perm falló, intentando sin..."
+        npm install 2>&1 || {
+            print_error "Error instalando dependencias del backend"
+            exit 1
+        }
+    }
     print_success "Dependencias del backend instaladas"
 else
     print_error "package.json no encontrado en $BACKEND_DIR"
@@ -179,23 +198,41 @@ print_step "Ejecutando migraciones de base de datos..."
 
 cd "$BACKEND_DIR"
 
-# Verificar si existe el comando de migración
-if grep -q "migrate" package.json; then
-    npm run migrate 2>&1 || {
-        print_warning "npm run migrate falló, intentando con npx knex..."
-        npx knex migrate:latest --knexfile knexfile.js 2>&1 || {
-            print_error "Error ejecutando migraciones"
-            exit 1
-        }
-    }
-    print_success "Migraciones ejecutadas"
-else
-    print_warning "Script de migración no encontrado en package.json"
-    print_info "Intentando con npx knex..."
-    npx knex migrate:latest --knexfile knexfile.js 2>&1 || {
-        print_warning "No se pudieron ejecutar migraciones automáticamente"
+# Exportar variables de entorno necesarias para knex
+export NODE_ENV=production
+export DB_HOST=localhost
+export DB_PORT=5432
+export DB_NAME=$DB_NAME
+export DB_USER=$DB_USER
+export DB_PASSWORD=$DB_PASSWORD
+export DB_SSL=false
+
+print_info "Ejecutando migraciones con NODE_ENV=$NODE_ENV"
+
+# Verificar conexión a la base de datos antes de migrar
+print_step "Verificando conexión a la base de datos..."
+PGPASSWORD="$DB_PASSWORD" psql -h localhost -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1;" > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    print_warning "No se pudo conectar con $DB_USER, verificando con postgres..."
+    sudo -u postgres psql -d "$DB_NAME" -c "SELECT 1;" > /dev/null 2>&1 || {
+        print_error "No se puede conectar a la base de datos"
+        exit 1
     }
 fi
+print_success "Conexión a base de datos verificada"
+
+# Ejecutar migraciones con npx knex directamente y --env production
+print_step "Ejecutando knex migrate:latest..."
+npx knex migrate:latest --env production 2>&1 || {
+    print_warning "Migración con --env production falló, intentando sin env..."
+    npx knex migrate:latest 2>&1 || {
+        print_error "Error ejecutando migraciones"
+        print_info "Verificando logs de knex..."
+        cat "$BACKEND_DIR/logs/error.log" 2>/dev/null || true
+        exit 1
+    }
+}
+print_success "Migraciones ejecutadas"
 
 # =============================================================================
 # Ejecutar seeds
@@ -205,21 +242,15 @@ print_step "Ejecutando seeds (datos iniciales)..."
 
 cd "$BACKEND_DIR"
 
-# Verificar si existe el comando de seed
-if grep -q "seed" package.json; then
-    npm run seed 2>&1 || {
-        print_warning "npm run seed falló, intentando con npx knex..."
-        npx knex seed:run --knexfile knexfile.js 2>&1 || {
-            print_warning "Error ejecutando seeds, continuando..."
-        }
+# Ejecutar seeds con npx knex directamente y --env production
+print_step "Ejecutando knex seed:run..."
+npx knex seed:run --env production 2>&1 || {
+    print_warning "Seeds con --env production falló, intentando sin env..."
+    npx knex seed:run 2>&1 || {
+        print_warning "Error ejecutando seeds, continuando de todos modos..."
     }
-    print_success "Seeds ejecutados"
-else
-    print_info "Intentando con npx knex seed:run..."
-    npx knex seed:run --knexfile knexfile.js 2>&1 || {
-        print_warning "No se pudieron ejecutar seeds automáticamente"
-    }
-fi
+}
+print_success "Seeds ejecutados"
 
 # =============================================================================
 # Verificar conexión

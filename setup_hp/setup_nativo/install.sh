@@ -151,7 +151,14 @@ print_step "Instalando dependencias npm del frontend..."
 cd "$FRONTEND_DIR"
 
 if [ -f "package.json" ]; then
-    npm install 2>&1 | tee -a "$LOG_FILE"
+    # Usar --unsafe-perm para evitar problemas al ejecutar como root
+    npm install --unsafe-perm 2>&1 | tee -a "$LOG_FILE" || {
+        print_warning "npm install con --unsafe-perm falló, intentando sin..."
+        npm install 2>&1 | tee -a "$LOG_FILE" || {
+            print_error "Error instalando dependencias del frontend"
+            exit 1
+        }
+    }
     print_success "Dependencias del frontend instaladas"
 else
     print_error "package.json no encontrado en $FRONTEND_DIR"

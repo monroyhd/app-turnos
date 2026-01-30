@@ -1,5 +1,58 @@
 # Changelog - Sistema de Turnos Hospitalarios
 
+## [2026-01-30] - Fix: Scripts Instalación Nativa (Permisos Root y Migraciones)
+
+### Problema
+Al ejecutar la instalación nativa como root:
+1. Servicios no corrían correctamente
+2. Base de datos y tablas no se creaban
+3. Migraciones fallaban silenciosamente
+
+### Causa Raíz
+1. `npm install` como root puede fallar sin `--unsafe-perm`
+2. Migraciones usaban entorno `development` que tiene credenciales por defecto diferentes
+3. Archivo `.env` se creaba después de las dependencias pero las migraciones necesitaban las variables
+4. Falta de verificación de conexión antes de migrar
+
+### Correcciones
+
+#### setup-database.sh - Reestructuración completa
+1. **Archivo .env se crea ANTES de npm install**
+   - Asegura que las variables estén disponibles para knex
+
+2. **npm install con --unsafe-perm**
+   ```bash
+   npm install --unsafe-perm
+   ```
+
+3. **NODE_ENV=production explícito**
+   - Se exportan todas las variables de DB antes de migrar
+   - Migraciones usan `--env production`
+
+4. **Verificación de conexión antes de migrar**
+   ```bash
+   PGPASSWORD="$DB_PASSWORD" psql -h localhost -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1;"
+   ```
+
+5. **Mejor manejo de errores**
+   - Mensajes más descriptivos
+   - Fallbacks si un método falla
+
+#### install.sh - Frontend npm
+- Agregado `--unsafe-perm` para npm install del frontend
+- Fallback si falla
+
+#### .env.production template
+- Agregado `DB_SSL=false` para evitar errores SSL en instalación nativa
+
+### Verificación
+Para verificar que las migraciones se ejecutaron:
+```bash
+sudo -u postgres psql -d app_turnos -c "\\dt"
+```
+
+---
+
 ## [2026-01-30] - Fix: Error SSL en Instalación Docker
 
 ### Problema
