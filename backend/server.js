@@ -53,16 +53,19 @@ app.use('/api/settings', require('./routes/settings'));
 app.use('/api/hospitalizaciones', require('./routes/hospitalizaciones'));
 app.use('/api/recursos', require('./routes/recursos'));
 
-// Ruta de health check
-app.get('/health', (req, res) => {
+// Ruta de health check (ambas rutas para compatibilidad)
+const healthResponse = (req, res) => {
   res.json({
     success: true,
+    status: 'healthy',
     message: 'API Sistema de Turnos funcionando correctamente',
     timestamp: new Date().toISOString(),
     version: '1.0.0',
     environment: process.env.NODE_ENV || 'development'
   });
-});
+};
+app.get('/health', healthResponse);
+app.get('/api/health', healthResponse);
 
 // Ruta raiz con informacion de la API
 app.get('/', (req, res) => {

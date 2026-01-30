@@ -1,5 +1,33 @@
 # Changelog - Sistema de Turnos Hospitalarios
 
+## [2026-01-30] - Correcciones Script Instalación Nativa
+
+### Problema
+El script de instalación nativa mostraba fallos en verificación de:
+- Mosquitto servicio/MQTT
+- PM2 proceso
+- API /api/health
+- Puertos MQTT
+
+### Correcciones
+
+#### mosquitto.conf (`setup_hp/setup_nativo/config/mosquitto.conf`)
+- WebSocket listener ya no usa `127.0.0.1` (no funciona en Mosquitto 2.0.x)
+- Seguridad manejada via firewall UFW
+```conf
+listener 1883 127.0.0.1  # TCP solo localhost
+listener 9001            # WebSocket (protegido por UFW)
+```
+
+#### Backend server.js
+- Agregado endpoint `/api/health` además de `/health`
+- Respuesta incluye `status: "healthy"` para verificación
+
+#### verify-installation.sh
+- Corregido grep de PM2: busca "app-turnos" o "online"
+
+---
+
 ## [2026-01-30] - Mejora Pantalla Pública: Turnos en Atención
 
 ### Resumen

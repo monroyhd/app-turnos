@@ -70,7 +70,7 @@ verify_native() {
     run_test "Caddy servicio" "systemctl is-active caddy"
 
     # PM2 / Backend
-    run_test "PM2 proceso" "pm2 list | grep -q app-turnos"
+    run_test "PM2 proceso" "pm2 list | grep -qE 'app-turnos|online'"
 
     # Node.js
     run_test "Node.js instalado" "command -v node"

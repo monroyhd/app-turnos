@@ -43,13 +43,15 @@ if [ -f "$MOSQUITTO_CONF" ]; then
 else
     print_warning "Archivo mosquitto.conf no encontrado, creando configuración básica..."
     cat > /etc/mosquitto/conf.d/app-turnos.conf << EOF
-listener 1883
+# TCP solo localhost
+listener 1883 127.0.0.1
+protocol mqtt
+
+# WebSocket (protegido por firewall)
 listener 9001
 protocol websockets
+
 allow_anonymous true
-persistence true
-persistence_location /var/lib/mosquitto/
-log_dest stdout
 EOF
     print_success "Configuración básica de Mosquitto creada"
 fi
