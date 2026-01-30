@@ -68,7 +68,6 @@ exports.up = function(knex) {
       table.timestamp('finished_at');
       table.integer('created_by').references('id').inTable('users');
       table.timestamps(true, true);
-      table.unique(['code', knex.raw('DATE(created_at)')]);
     })
     // Turn history table
     .createTable('turn_history', (table) => {
@@ -92,7 +91,8 @@ exports.up = function(knex) {
     .then(() => knex.schema.raw('CREATE INDEX idx_turns_status ON turns(status)'))
     .then(() => knex.schema.raw('CREATE INDEX idx_turns_created_at ON turns(created_at)'))
     .then(() => knex.schema.raw('CREATE INDEX idx_turns_doctor_id ON turns(doctor_id)'))
-    .then(() => knex.schema.raw('CREATE INDEX idx_turns_service_id ON turns(service_id)'));
+    .then(() => knex.schema.raw('CREATE INDEX idx_turns_service_id ON turns(service_id)'))
+    .then(() => knex.schema.raw('CREATE UNIQUE INDEX idx_turns_code_date ON turns(code, ((created_at AT TIME ZONE $$UTC$$)::date))'));
 };
 
 exports.down = function(knex) {
