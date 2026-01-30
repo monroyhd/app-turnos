@@ -26,6 +26,13 @@ listener 9001            # WebSocket (protegido por UFW)
 #### verify-installation.sh
 - Corregido grep de PM2: busca "app-turnos" o "online"
 
+#### setup-services.sh - Caddyfile fallback
+- Configuración fallback ahora incluye todas las características:
+  - Proxy `/mqtt-ws` para WebSocket MQTT
+  - Headers de seguridad (X-Frame-Options, X-Content-Type-Options, etc.)
+  - Compresión gzip/zstd
+  - Cache para assets estáticos
+
 ---
 
 ## [2026-01-30] - Mejora Pantalla Pública: Turnos en Atención

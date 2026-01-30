@@ -108,31 +108,64 @@ if [ -f "$CADDY_CONF" ]; then
 
     print_success "Configuración de Caddy copiada"
 else
-    print_warning "Archivo Caddyfile no encontrado, creando configuración básica..."
+    print_warning "Archivo Caddyfile no encontrado, creando configuración completa..."
     cat > /etc/caddy/Caddyfile << EOF
+# =============================================================================
+# Caddyfile - Configuración de Caddy para App-Turnos (Instalación Nativa)
+# =============================================================================
+
 :80 {
+    # Directorio raíz del frontend
     root * $PROJECT_ROOT/frontend/dist
+
+    # Servir archivos estáticos
     file_server
 
+    # Proxy reverso para API backend
     handle /api/* {
         reverse_proxy localhost:3000
     }
 
+    # Proxy reverso para uploads/archivos subidos
     handle /uploads/* {
         reverse_proxy localhost:3000
     }
 
+    # Proxy WebSocket para MQTT (permite conexión sin especificar IP/puerto)
+    handle /mqtt-ws {
+        reverse_proxy localhost:9001
+    }
+
+    # Manejo de SPA - redirigir rutas desconocidas a index.html
     handle {
         try_files {path} /index.html
     }
 
+    # Logging
     log {
         output stdout
         format console
     }
+
+    # Headers de seguridad básicos
+    header {
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+        -Server
+    }
+
+    # Compresión
+    encode gzip zstd
+
+    # Cache para assets estáticos
+    @static {
+        path *.js *.css *.png *.jpg *.jpeg *.gif *.ico *.svg *.woff *.woff2
+    }
+    header @static Cache-Control "public, max-age=31536000"
 }
 EOF
-    print_success "Configuración básica de Caddy creada"
+    print_success "Configuración de Caddy creada"
 fi
 
 # Validar configuración
