@@ -1,12 +1,14 @@
 exports.up = function(knex) {
-  return knex.schema
+  // Create user_role enum type explicitly (required for migrations 004+)
+  return knex.raw("CREATE TYPE user_role AS ENUM ('admin', 'capturista', 'medico', 'display')")
+    .then(() => knex.schema
     // Users table
     .createTable('users', (table) => {
       table.increments('id').primary();
       table.string('username', 50).unique().notNullable();
       table.string('email', 100).unique().notNullable();
       table.string('password_hash', 255).notNullable();
-      table.enu('role', ['admin', 'capturista', 'medico', 'display']).defaultTo('capturista');
+      table.specificType('role', 'user_role').defaultTo('capturista');
       table.string('full_name', 100);
       table.boolean('is_active').defaultTo(true);
       table.timestamps(true, true);
@@ -92,7 +94,7 @@ exports.up = function(knex) {
     .then(() => knex.schema.raw('CREATE INDEX idx_turns_created_at ON turns(created_at)'))
     .then(() => knex.schema.raw('CREATE INDEX idx_turns_doctor_id ON turns(doctor_id)'))
     .then(() => knex.schema.raw('CREATE INDEX idx_turns_service_id ON turns(service_id)'))
-    .then(() => knex.schema.raw('CREATE UNIQUE INDEX idx_turns_code_date ON turns(code, ((created_at AT TIME ZONE $$UTC$$)::date))'));
+    .then(() => knex.schema.raw('CREATE UNIQUE INDEX idx_turns_code_date ON turns(code, ((created_at AT TIME ZONE $$UTC$$)::date))')));
 };
 
 exports.down = function(knex) {
@@ -104,5 +106,6 @@ exports.down = function(knex) {
     .dropTableIfExists('doctor_services')
     .dropTableIfExists('doctors')
     .dropTableIfExists('services')
-    .dropTableIfExists('users');
+    .dropTableIfExists('users')
+    .then(() => knex.raw('DROP TYPE IF EXISTS user_role'));
 };
