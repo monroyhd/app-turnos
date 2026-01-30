@@ -1,5 +1,65 @@
 # Changelog - Sistema de Turnos Hospitalarios
 
+## [2026-01-30] - Mejora: Backups consistentes en instalación nativa
+
+### Cambios
+Actualizado `setup-services.sh` para crear backups con timestamp de todos los archivos de configuración antes de sobrescribirlos.
+
+### Archivos afectados
+- **Mosquitto** (`/etc/mosquitto/conf.d/app-turnos.conf`)
+- **Caddy** (`/etc/caddy/Caddyfile`)
+- **PM2** (`backend/ecosystem.config.js`)
+
+### Comportamiento
+1. Si el archivo existe → crea backup con timestamp (ej: `archivo.backup.20260130_142500`)
+2. Si el archivo no existe → crea el nuevo archivo directamente
+3. Si el archivo de origen en el repo no existe → crea configuración básica inline
+
+### Formato de backup
+```
+archivo.conf.backup.YYYYMMDD_HHMMSS
+```
+
+---
+
+## [2026-01-30] - Fix: Duplicate persistence_location en Mosquitto
+
+### Problema
+Error al iniciar Mosquitto en servidor nuevo:
+```
+Duplicate persistence_location value in configuration.
+Error found at /etc/mosquitto/conf.d/app-turnos.conf:42.
+Error found at /etc/mosquitto/mosquitto.conf:13.
+```
+
+### Causa
+El archivo `mosquitto.conf` de la app incluía configuración de persistencia y logging que ya existe en el archivo principal del sistema `/etc/mosquitto/mosquitto.conf`.
+
+### Solución
+Simplificado `setup_hp/setup_nativo/config/mosquitto.conf` para incluir **solo**:
+- Listeners (TCP en 1883, WebSocket en 9001)
+- Autenticación (allow_anonymous)
+
+Removidas las configuraciones duplicadas:
+- persistence, persistence_location
+- log_dest, log_type
+- max_connections, message_size_limit
+- pid_file, user
+
+### Archivo corregido
+```conf
+# Solo listeners y autenticación
+listener 1883 127.0.0.1
+protocol mqtt
+
+listener 9001
+protocol websockets
+
+allow_anonymous true
+```
+
+---
+
 ## [2026-01-30] - Fix: Scripts Instalación Nativa (Permisos Root y Migraciones)
 
 ### Problema

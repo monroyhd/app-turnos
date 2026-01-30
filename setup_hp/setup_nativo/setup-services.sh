@@ -34,24 +34,38 @@ print_step "Configurando Mosquitto MQTT..."
 # Crear directorio de configuración si no existe
 mkdir -p /etc/mosquitto/conf.d
 
-# Copiar configuración
+# Respaldar configuración existente si existe (con timestamp)
+MOSQUITTO_DEST="/etc/mosquitto/conf.d/app-turnos.conf"
+if [ -f "$MOSQUITTO_DEST" ]; then
+    BACKUP_NAME="${MOSQUITTO_DEST}.backup.$(date +%Y%m%d_%H%M%S)"
+    cp "$MOSQUITTO_DEST" "$BACKUP_NAME"
+    print_info "Configuración de Mosquitto respaldada en: $BACKUP_NAME"
+fi
+
+# Copiar configuración desde el repo
 MOSQUITTO_CONF="$SCRIPT_DIR/config/mosquitto.conf"
 if [ -f "$MOSQUITTO_CONF" ]; then
-    backup_file /etc/mosquitto/conf.d/app-turnos.conf
-    cp "$MOSQUITTO_CONF" /etc/mosquitto/conf.d/app-turnos.conf
-    print_success "Configuración de Mosquitto copiada"
+    cp "$MOSQUITTO_CONF" "$MOSQUITTO_DEST"
+    print_success "Configuración de Mosquitto copiada desde: $MOSQUITTO_CONF"
 else
-    print_warning "Archivo mosquitto.conf no encontrado, creando configuración básica..."
-    cat > /etc/mosquitto/conf.d/app-turnos.conf << EOF
-# TCP solo localhost
+    print_warning "Archivo mosquitto.conf no encontrado en repo, creando configuración básica..."
+    cat > "$MOSQUITTO_DEST" << 'EOF'
+# =============================================================================
+# Configuración mínima de Mosquitto para App-Turnos
+# =============================================================================
+
+# IMPORTANTE: Permitir conexiones anónimas (DEBE ir ANTES de los listeners)
+# En Mosquitto 2.0+ el valor por defecto es false, causando error:
+# "Connection refused: Not authorized"
+allow_anonymous true
+
+# Listener TCP (solo localhost)
 listener 1883 127.0.0.1
 protocol mqtt
 
-# WebSocket (protegido por firewall)
+# Listener WebSocket (accesible via Caddy proxy /mqtt-ws)
 listener 9001
 protocol websockets
-
-allow_anonymous true
 EOF
     print_success "Configuración básica de Mosquitto creada"
 fi
@@ -196,15 +210,25 @@ print_step "Configurando PM2..."
 
 BACKEND_DIR="$PROJECT_ROOT/backend"
 PM2_CONFIG="$SCRIPT_DIR/config/ecosystem.config.js"
+PM2_DEST="$BACKEND_DIR/ecosystem.config.js"
+
+# Respaldar configuración existente si existe (con timestamp)
+if [ -f "$PM2_DEST" ]; then
+    BACKUP_NAME="${PM2_DEST}.backup.$(date +%Y%m%d_%H%M%S)"
+    cp "$PM2_DEST" "$BACKUP_NAME"
+    print_info "Configuración de PM2 respaldada en: $BACKUP_NAME"
+fi
 
 # Copiar configuración de PM2
 if [ -f "$PM2_CONFIG" ]; then
-    cp "$PM2_CONFIG" "$BACKEND_DIR/ecosystem.config.js"
+    cp "$PM2_CONFIG" "$PM2_DEST"
 
     # Ajustar rutas
-    sed -i "s|/apps-node/app-turnos|$PROJECT_ROOT|g" "$BACKEND_DIR/ecosystem.config.js"
+    sed -i "s|/apps-node/app-turnos|$PROJECT_ROOT|g" "$PM2_DEST"
 
-    print_success "Configuración de PM2 copiada"
+    print_success "Configuración de PM2 copiada desde: $PM2_CONFIG"
+else
+    print_warning "Archivo ecosystem.config.js no encontrado en repo"
 fi
 
 # Crear directorios necesarios
