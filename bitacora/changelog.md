@@ -1,5 +1,62 @@
 # Changelog - Sistema de Turnos Hospitalarios
 
+## [2026-01-30] - Fix: PostgreSQL Enum user_role en Servidor Nuevo
+
+### Problema
+Error en migración `004_add_resource_roles.js`:
+```
+ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'admin_recurso' - type "user_role" does not exist
+```
+
+### Causa Raíz
+El tipo `user_role` no se creaba explícitamente en la migración 001. Knex usaba `enu()` que no crea el tipo PostgreSQL, solo la restricción.
+
+### Solución (commit cc4c8e8)
+**Modificado `backend/database/migrations/001_initial_schema.js`:**
+
+1. **Creación explícita del enum** (línea 3):
+   ```javascript
+   return knex.raw("CREATE TYPE user_role AS ENUM ('admin', 'capturista', 'medico', 'display')")
+   ```
+
+2. **Uso de specificType** (línea 11):
+   ```javascript
+   table.specificType('role', 'user_role').defaultTo('capturista');
+   ```
+
+3. **Rollback limpio** (línea 110):
+   ```javascript
+   .then(() => knex.raw('DROP TYPE IF EXISTS user_role'));
+   ```
+
+### Para Servidores Nuevos
+Si el servidor clonó el repo antes del fix:
+
+```bash
+# 1. Actualizar código
+cd /apps-node/app-turnos
+git pull origin main
+
+# 2. Limpiar BD si existe (instalación fallida previa)
+sudo -u postgres psql -c "DROP DATABASE IF EXISTS app_turnos;"
+sudo -u postgres psql -c "DROP USER IF EXISTS app_turnos_user;"
+
+# 3. Ejecutar instalación
+cd /apps-node/app-turnos/setup_hp/setup_nativo
+sudo ./install.sh
+```
+
+### Verificación
+```bash
+# Verificar tablas
+sudo -u postgres psql -d app_turnos -c "\dt"
+
+# Verificar enum
+sudo -u postgres psql -d app_turnos -c "SELECT enumlabel FROM pg_enum WHERE enumtypid = 'user_role'::regtype;"
+```
+
+---
+
 ## [2026-01-30] - Mejora: Backups consistentes en instalación nativa
 
 ### Cambios
