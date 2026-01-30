@@ -1,0 +1,55 @@
+# =============================================================================
+# Dockerfile.api - Imagen Docker para Backend App-Turnos
+# =============================================================================
+#
+# Construye una imagen Docker para el backend Node.js del sistema de turnos.
+#
+# Uso:
+#   docker build -t app-turnos-api -f Dockerfile.api ../backend
+#
+# =============================================================================
+
+FROM node:20-alpine
+
+# Metadatos
+LABEL maintainer="App-Turnos Team"
+LABEL description="Backend API para Sistema de Turnos Hospitalarios"
+LABEL version="1.0"
+
+# Crear usuario no-root para seguridad
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Directorio de trabajo
+WORKDIR /app
+
+# Copiar archivos de dependencias primero (para caché de Docker)
+COPY package*.json ./
+
+# Instalar dependencias de producción
+RUN npm ci --only=production && \
+    npm cache clean --force
+
+# Copiar código fuente
+COPY . .
+
+# Crear directorios necesarios
+RUN mkdir -p logs public/uploads && \
+    chown -R nodejs:nodejs /app
+
+# Cambiar a usuario no-root
+USER nodejs
+
+# Puerto de la aplicación
+EXPOSE 3000
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+
+# Variables de entorno por defecto
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Comando de inicio
+CMD ["node", "server.js"]

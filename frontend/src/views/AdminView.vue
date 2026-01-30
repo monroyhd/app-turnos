@@ -127,44 +127,55 @@
         </button>
       </div>
 
-      <div class="bg-white rounded-lg shadow overflow-hidden">
-        <table class="min-w-full">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Codigo</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Prefijo</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categoria</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duracion Est.</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200">
-            <tr v-for="service in services" :key="service.id">
-              <td class="px-4 py-3">{{ service.name }}</td>
-              <td class="px-4 py-3">{{ service.code }}</td>
-              <td class="px-4 py-3 font-bold text-primary-600">{{ service.prefix }}</td>
-              <td class="px-4 py-3">
-                <span :class="service.tipo === 'recurso' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'" class="px-2 py-1 text-xs rounded">
-                  {{ service.tipo === 'recurso' ? 'Recurso' : 'Servicio' }}
-                </span>
-              </td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ service.categoria || '-' }}</td>
-              <td class="px-4 py-3">{{ service.estimated_duration }} min</td>
-              <td class="px-4 py-3">
-                <span :class="service.is_active ? 'text-green-600' : 'text-red-600'">
-                  {{ service.is_active ? 'Activo' : 'Inactivo' }}
-                </span>
-              </td>
-              <td class="px-4 py-3">
-                <button @click="editService(service)" class="text-primary-600 hover:text-primary-800 mr-2">Editar</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- Servicios agrupados por categoria -->
+      <div v-for="(categoryServices, category) in servicesByCategory" :key="category" class="space-y-2">
+        <!-- Header de categoria -->
+        <div class="flex items-center gap-2 py-2">
+          <h3 class="text-md font-semibold text-gray-700">{{ category }}</h3>
+          <span class="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">{{ categoryServices.length }}</span>
+        </div>
+
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+          <table class="min-w-full">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Codigo</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Prefijo</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Duracion Est.</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <tr v-for="service in categoryServices" :key="service.id">
+                <td class="px-4 py-3">{{ service.name }}</td>
+                <td class="px-4 py-3 text-sm text-gray-500">{{ service.code }}</td>
+                <td class="px-4 py-3 font-bold text-primary-600">{{ service.prefix }}</td>
+                <td class="px-4 py-3">{{ service.estimated_duration }} min</td>
+                <td class="px-4 py-3">
+                  <span :class="service.is_active ? 'text-green-600' : 'text-red-600'">
+                    {{ service.is_active ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td class="px-4 py-3">
+                  <button @click="editService(service)" class="text-primary-600 hover:text-primary-800 mr-2">Editar</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      <!-- Mensaje si no hay servicios -->
+      <div v-if="services.length === 0" class="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+        No hay servicios registrados. Haga clic en "Agregar Servicio" para crear uno.
+      </div>
+    </div>
+
+    <!-- Tab: Recursos -->
+    <div v-if="activeTab === 'recursos'">
+      <AdminRecursoView />
     </div>
 
     <!-- Usuarios -->
@@ -202,7 +213,7 @@
                   'bg-blue-100 text-blue-800': user.role === 'capturista',
                   'bg-green-100 text-green-800': user.role === 'medico',
                   'bg-gray-100 text-gray-800': user.role === 'display',
-                  'bg-orange-100 text-orange-800': user.role === 'admin_recurso',
+                  'bg-orange-100 text-orange-800': user.role === 'admin_habitaciones',
                   'bg-teal-100 text-teal-800': user.role === 'pan_recurso'
                 }" class="px-2 py-1 text-xs rounded">
                   {{ getRolLabel(user.role) }}
@@ -396,19 +407,22 @@
             <input v-model="serviceForm.name" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
           </div>
           <div>
+            <label class="block text-sm font-medium text-gray-700">Codigo/Identificador</label>
+            <input v-model="serviceForm.code" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Ej: 101, LAB-01 (opcional)">
+            <p class="mt-1 text-xs text-gray-500">Si se deja vacio, se generara automaticamente del nombre</p>
+          </div>
+          <div>
             <label class="block text-sm font-medium text-gray-700">Duracion Estimada (min)</label>
             <input type="number" v-model="serviceForm.estimated_duration" min="1" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700">Tipo *</label>
-            <select v-model="serviceForm.tipo" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
-              <option value="servicio">Servicio</option>
-              <option value="recurso">Recurso</option>
-            </select>
-          </div>
-          <div>
+                    <div>
             <label class="block text-sm font-medium text-gray-700">Categoria</label>
             <input v-model="serviceForm.categoria" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Ej: Consultas, Laboratorio">
+          </div>
+          <div v-if="editingService" class="pt-2 border-t border-gray-200">
+            <button type="button" @click="deleteService" class="w-full py-2 px-4 bg-red-500 text-white rounded-md hover:bg-red-600">
+              Eliminar Servicio
+            </button>
           </div>
           <div class="flex space-x-2">
             <button type="submit" class="flex-1 py-2 px-4 bg-primary-600 text-white rounded-md">Guardar</button>
@@ -437,7 +451,7 @@
             <select v-model="userForm.role" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
               <option value="capturista">Capturista</option>
               <option value="admin">Administrador</option>
-              <option value="admin_recurso">Admin Recursos</option>
+              <option value="admin_habitaciones">Admin Habitaciones</option>
               <option value="pan_recurso">Panel Recursos</option>
               <option value="display">Pantalla</option>
             </select>
@@ -473,9 +487,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import api from '../services/api'
 import { useSettingsStore } from '../stores/settings'
+import AdminRecursoView from './AdminRecursoView.vue'
 
 const settingsStore = useSettingsStore()
 
@@ -483,6 +498,7 @@ const tabs = [
   { id: 'dashboard', name: 'Dashboard' },
   { id: 'doctors', name: 'Medicos' },
   { id: 'services', name: 'Servicios' },
+  { id: 'recursos', name: 'Recursos' },
   { id: 'users', name: 'Usuarios' },
   { id: 'settings', name: 'Configuracion' }
 ]
@@ -502,8 +518,31 @@ const editingService = ref(null)
 const editingUser = ref(null)
 
 const doctorForm = ref({ full_name: '', specialty: '', email: '', phone: '', username: '' })
-const serviceForm = ref({ name: '', estimated_duration: 15, tipo: 'servicio', categoria: '' })
+const serviceForm = ref({ name: '', code: '', estimated_duration: 15, tipo: 'servicio', categoria: '' })
 const userForm = ref({ full_name: '', username: '', role: 'capturista', is_active: true })
+
+// Agrupar servicios por categoria
+const servicesByCategory = computed(() => {
+  const grouped = {}
+  services.value.forEach(service => {
+    const cat = service.categoria || 'Sin categoria'
+    if (!grouped[cat]) {
+      grouped[cat] = []
+    }
+    grouped[cat].push(service)
+  })
+  // Ordenar categorias alfabeticamente, pero "Sin categoria" al final
+  const sortedKeys = Object.keys(grouped).sort((a, b) => {
+    if (a === 'Sin categoria') return 1
+    if (b === 'Sin categoria') return -1
+    return a.localeCompare(b)
+  })
+  const result = {}
+  sortedKeys.forEach(key => {
+    result[key] = grouped[key]
+  })
+  return result
+})
 
 // Settings form
 const settingsForm = ref({
@@ -616,7 +655,7 @@ async function loadData() {
     api.get('/turns/stats'),
     api.get('/turns?today=true'),
     api.get('/doctors?is_active=true'),
-    api.get('/services'),
+    api.get('/services?tipo=servicio'),
     api.get('/auth/users')
   ])
 
@@ -660,6 +699,7 @@ function openNewServiceModal() {
   editingService.value = null
   serviceForm.value = {
     name: '',
+    code: '',
     estimated_duration: 15,
     tipo: 'servicio',
     categoria: ''
@@ -715,10 +755,27 @@ async function saveService() {
     }
     showServiceModal.value = false
     editingService.value = null
-    serviceForm.value = { name: '', estimated_duration: 15, tipo: 'servicio', categoria: '' }
+    serviceForm.value = { name: '', code: '', estimated_duration: 15, tipo: 'servicio', categoria: '' }
     await loadData()
   } catch (err) {
     alert(err.response?.data?.message || 'Error guardando servicio')
+  }
+}
+
+async function deleteService() {
+  if (!editingService.value) return
+
+  if (!confirm(`¿Esta seguro de eliminar el servicio "${editingService.value.name}"?\n\nEsta accion eliminara el registro permanentemente.`)) return
+
+  try {
+    await api.delete(`/services/${editingService.value.id}`)
+    alert('Servicio eliminado exitosamente')
+    showServiceModal.value = false
+    editingService.value = null
+    serviceForm.value = { name: '', code: '', estimated_duration: 15, tipo: 'servicio', categoria: '' }
+    await loadData()
+  } catch (err) {
+    alert(err.response?.data?.message || 'Error eliminando servicio')
   }
 }
 
@@ -839,7 +896,7 @@ function getRolLabel(role) {
     capturista: 'Capturista',
     medico: 'Medico',
     display: 'Pantalla',
-    admin_recurso: 'Admin Recursos',
+    admin_habitaciones: 'Admin Habitaciones',
     pan_recurso: 'Panel Recursos'
   }
   return labels[role] || role
@@ -851,7 +908,7 @@ function getDefaultPassword(role) {
     capturista: 'captura123#',
     medico: 'medico123',
     display: 'display123',
-    admin_recurso: 'recurso123#',
+    admin_habitaciones: 'habitacion123#',
     pan_recurso: 'panrecurso123'
   }
   return passwords[role] || 'password123'

@@ -22,7 +22,7 @@ const routes = [
 
       switch (authStore.user?.role) {
         case 'admin': return '/admin'
-        case 'admin_recurso': return '/admin-recurso'
+        case 'admin_habitaciones': return '/admin-habitaciones'
         case 'capturista': return '/capturista'
         case 'medico': return '/doctor'
         default: return '/login'
@@ -36,10 +36,10 @@ const routes = [
     meta: { roles: ['admin'] }
   },
   {
-    path: '/admin-recurso',
-    name: 'AdminRecurso',
-    component: () => import('../views/AdminRecursoView.vue'),
-    meta: { roles: ['admin', 'admin_recurso'] }
+    path: '/admin-habitaciones',
+    name: 'AdminHabitaciones',
+    component: () => import('../views/AdminHabitacionesView.vue'),
+    meta: { roles: ['admin', 'admin_habitaciones'] }
   },
   {
     path: '/capturista',

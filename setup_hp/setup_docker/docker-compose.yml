@@ -1,0 +1,189 @@
+# =============================================================================
+# docker-compose.yml - Orquestación de servicios App-Turnos
+# =============================================================================
+#
+# Este archivo define todos los servicios necesarios para ejecutar
+# el sistema de turnos hospitalarios con Docker Compose.
+#
+# Servicios:
+#   - postgres:   Base de datos PostgreSQL 15
+#   - mosquitto:  Broker MQTT para comunicación en tiempo real
+#   - api:        Backend Node.js
+#   - frontend:   Frontend Vue.js servido con nginx
+#   - caddy:      Proxy reverso y servidor web
+#
+# Uso:
+#   docker compose up -d
+#   docker compose down
+#   docker compose logs -f
+#
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ===========================================================================
+  # PostgreSQL - Base de datos
+  # ===========================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: turnos-postgres
+    environment:
+      POSTGRES_DB: app_turnos
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d app_turnos"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - turnos-network
+
+  # ===========================================================================
+  # Mosquitto - Broker MQTT
+  # ===========================================================================
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: turnos-mosquitto
+    volumes:
+      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+    # Puertos MQTT no expuestos externamente - acceso solo via red Docker interna
+    # El frontend accede via Caddy proxy en /mqtt-ws
+    healthcheck:
+      test: ["CMD", "mosquitto_sub", "-t", "$$SYS/#", "-C", "1", "-i", "healthcheck", "-W", "3"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - turnos-network
+
+  # ===========================================================================
+  # API - Backend Node.js
+  # ===========================================================================
+  api:
+    build:
+      context: ../../backend
+      dockerfile: ../setup_hp/setup_docker/Dockerfile.api
+    container_name: turnos-api
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      # Base de datos
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: app_turnos
+      DB_USER: postgres
+      DB_PASSWORD: ${DB_PASSWORD:-postgres123}
+      # MQTT
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      MQTT_WS_PORT: 9001
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      JWT_EXPIRES_IN: 24h
+      # Hospital
+      HOSPITAL_ID: ${HOSPITAL_ID:-hospital-1}
+      HOSPITAL_NAME: ${HOSPITAL_NAME:-Hospital General}
+      # CORS
+      CORS_ORIGIN: "*"
+    volumes:
+      - api_uploads:/app/public/uploads
+      - api_logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - turnos-network
+
+  # ===========================================================================
+  # Frontend - Vue.js con nginx
+  # ===========================================================================
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: ../setup_hp/setup_docker/Dockerfile.frontend
+      args:
+        VITE_API_URL: /api
+    container_name: turnos-frontend
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - turnos-network
+
+  # ===========================================================================
+  # Caddy - Proxy reverso
+  # ===========================================================================
+  caddy:
+    image: caddy:2-alpine
+    container_name: turnos-caddy
+    ports:
+      - "80:80"
+    volumes:
+      - ./config/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - api
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - turnos-network
+
+# =============================================================================
+# Volúmenes
+# =============================================================================
+volumes:
+  postgres_data:
+    name: turnos-postgres-data
+  mosquitto_data:
+    name: turnos-mosquitto-data
+  mosquitto_log:
+    name: turnos-mosquitto-log
+  api_uploads:
+    name: turnos-api-uploads
+  api_logs:
+    name: turnos-api-logs
+  caddy_data:
+    name: turnos-caddy-data
+  caddy_config:
+    name: turnos-caddy-config
+
+# =============================================================================
+# Redes
+# =============================================================================
+networks:
+  turnos-network:
+    name: turnos-network
+    driver: bridge

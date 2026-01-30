@@ -1,124 +1,141 @@
 <template>
   <div
-    class="h-screen overflow-hidden text-gray-800 bg-gray-50"
-    :style="settingsStore.backgroundUrl ? { backgroundImage: `url(${settingsStore.backgroundUrl})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', backgroundColor: '#f9fafb' } : {}"
+    class="h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900"
+    :style="settingsStore.backgroundUrl ? { backgroundImage: `url(${settingsStore.backgroundUrl})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' } : {}"
   >
     <!-- Header -->
-    <header class="bg-white shadow-sm py-4 px-6 flex justify-between items-center border-b border-gray-200">
+    <header class="bg-black/30 backdrop-blur-sm py-4 px-6 flex justify-between items-center border-b border-white/10">
       <div class="flex items-center space-x-4">
         <img
           v-if="settingsStore.logoUrl"
           :src="settingsStore.logoUrl"
           alt="Logo"
-          class="h-12 w-auto object-contain"
+          class="h-14 w-auto object-contain"
         >
-        <h1 class="text-2xl font-bold text-gray-900">{{ settingsStore.hospitalName }}</h1>
+        <h1 class="text-3xl font-bold text-white">{{ settingsStore.hospitalName }}</h1>
       </div>
       <div class="text-right">
-        <p class="text-3xl font-mono text-gray-900">{{ currentTime }}</p>
-        <p class="text-sm text-gray-500">{{ currentDate }}</p>
+        <p class="text-4xl font-mono text-cyan-400 font-bold">{{ currentTime }}</p>
+        <p class="text-sm text-gray-300">{{ currentDate }}</p>
       </div>
     </header>
 
-    <main class="p-6 overflow-auto" style="height: calc(100vh - 80px);">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <main class="p-6 overflow-auto" style="height: calc(100vh - 90px);">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
         <!-- Panel Principal: Turno Llamado -->
-        <div class="lg:col-span-2">
+        <div class="lg:col-span-2 flex flex-col gap-6">
+          <!-- Turno Actual -->
           <div
             v-if="currentCalledTurn"
-            class="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 announcement-enter"
+            class="flex-1 rounded-3xl p-8 shadow-2xl border-4 transition-all duration-300"
+            :class="isNewTurn ? 'animate-pulse-border bg-gradient-to-br from-emerald-500 via-cyan-500 to-blue-600 border-yellow-400' : 'bg-gradient-to-br from-blue-600 via-cyan-600 to-teal-500 border-cyan-400/50'"
           >
-            <div class="text-center">
-              <p class="text-gray-400 text-lg mb-2 uppercase tracking-wider">Turno</p>
-              <p class="text-8xl font-bold text-blue-600 mb-4">
+            <div class="text-center h-full flex flex-col justify-center">
+              <p class="text-white/80 text-2xl mb-2 uppercase tracking-widest font-semibold">TURNO</p>
+              <p
+                class="text-9xl font-black text-white mb-4 drop-shadow-lg"
+                :class="{ 'animate-bounce-slow': isNewTurn }"
+              >
                 {{ currentCalledTurn.code }}
               </p>
-              <p class="text-3xl font-medium text-gray-700 mb-6">
+              <p class="text-4xl font-semibold text-white/90 mb-8">
                 {{ currentCalledTurn.patient_name || 'Paciente' }}
               </p>
 
-              <div class="flex justify-center items-center space-x-4 text-xl">
-                <div class="bg-gray-50 rounded-lg px-6 py-3 border border-gray-200">
-                  <p class="text-gray-400 text-sm uppercase tracking-wider">Consultorio</p>
-                  <p class="font-bold text-2xl text-gray-900">{{ currentCalledTurn.office_number || '-' }}</p>
+              <div class="flex justify-center items-center gap-6">
+                <div class="bg-white/20 backdrop-blur-sm rounded-2xl px-8 py-4 border border-white/30">
+                  <p class="text-white/70 text-sm uppercase tracking-wider font-medium">Consultorio</p>
+                  <p class="font-black text-4xl text-yellow-300 drop-shadow">{{ currentCalledTurn.consultorio_nombre || currentCalledTurn.office_number || '-' }}</p>
                 </div>
-                <div class="bg-gray-50 rounded-lg px-6 py-3 border border-gray-200">
-                  <p class="text-gray-400 text-sm uppercase tracking-wider">Doctor</p>
-                  <p class="font-bold text-gray-900">{{ currentCalledTurn.doctor_name || '-' }}</p>
+                <div class="bg-white/20 backdrop-blur-sm rounded-2xl px-8 py-4 border border-white/30">
+                  <p class="text-white/70 text-sm uppercase tracking-wider font-medium">Doctor</p>
+                  <p class="font-bold text-xl text-white">{{ currentCalledTurn.doctor_name || '-' }}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div v-else class="bg-white rounded-2xl p-8 text-center shadow-lg border border-gray-100">
-            <p class="text-4xl text-gray-400">Esperando turno...</p>
+          <!-- Sin turno llamado -->
+          <div v-else class="flex-1 bg-gradient-to-br from-slate-800 to-slate-700 rounded-3xl p-8 text-center shadow-2xl border border-slate-600 flex items-center justify-center">
+            <div>
+              <div class="text-6xl mb-4">🏥</div>
+              <p class="text-5xl text-gray-400 font-light">Esperando turno...</p>
+            </div>
           </div>
 
-          <!-- Lista de turnos llamados recientemente -->
-          <div class="mt-6 bg-white rounded-xl p-4 shadow-md border border-gray-100">
-            <h3 class="text-lg font-semibold mb-3 text-gray-600 uppercase tracking-wider">Turnos Llamados</h3>
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <!-- Lista de turnos en atención -->
+          <div class="bg-black/40 backdrop-blur-sm rounded-2xl p-5 shadow-xl border border-white/10">
+            <h3 class="text-xl font-bold mb-4 text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+              <span class="w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></span>
+              En Atención
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div
+                v-for="turn in inServiceTurns"
+                :key="turn.id"
+                class="bg-gradient-to-br from-emerald-800/60 to-emerald-900/60 rounded-xl p-4 text-center border-2 border-emerald-500/50 shadow-lg"
+              >
+                <p class="text-3xl font-black text-white">{{ turn.code }}</p>
+                <p class="text-sm text-emerald-300 font-medium">{{ turn.consultorio_nombre || turn.office_number || '-' }}</p>
+                <p class="text-xs text-emerald-200/70 mt-1 truncate">{{ turn.doctor_name || '' }}</p>
+              </div>
+              <p v-if="inServiceTurns.length === 0" class="col-span-full text-center text-gray-500 py-4">
+                Sin turnos en atención
+              </p>
+            </div>
+          </div>
+
+          <!-- Lista de turnos llamados (esperando paciente) -->
+          <div v-if="recentCalledTurns.length > 0" class="bg-black/40 backdrop-blur-sm rounded-2xl p-5 shadow-xl border border-white/10">
+            <h3 class="text-xl font-bold mb-4 text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+              <span class="w-3 h-3 bg-cyan-400 rounded-full animate-pulse"></span>
+              Llamando
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div
                 v-for="turn in recentCalledTurns"
                 :key="turn.id"
-                class="bg-gray-50 rounded-lg p-3 text-center border border-gray-200"
+                class="bg-gradient-to-br from-cyan-800/50 to-cyan-900/50 rounded-xl p-4 text-center border border-cyan-500/40 hover:border-cyan-400 transition-all animate-pulse"
               >
-                <p class="text-2xl font-bold text-gray-800">{{ turn.code }}</p>
-                <p class="text-sm text-gray-500">{{ turn.office_number || 'Consultorio -' }}</p>
+                <p class="text-3xl font-black text-white">{{ turn.code }}</p>
+                <p class="text-sm text-cyan-300 font-medium">{{ turn.consultorio_nombre || turn.office_number || '-' }}</p>
               </div>
-              <p v-if="recentCalledTurns.length === 0" class="col-span-full text-center text-gray-400">
-                Sin turnos llamados
-              </p>
             </div>
           </div>
         </div>
 
         <!-- Panel Lateral: Cola de Espera -->
         <div class="lg:col-span-1">
-          <div class="bg-white rounded-xl p-4 shadow-md border border-gray-100">
-            <h3 class="text-xl font-semibold mb-4 text-center text-gray-700 uppercase tracking-wider">
-              Próximos en Espera
+          <div class="bg-black/40 backdrop-blur-sm rounded-2xl p-5 shadow-xl border border-white/10 h-full">
+            <h3 class="text-2xl font-bold mb-6 text-center text-orange-400 uppercase tracking-wider flex items-center justify-center gap-2">
+              <span class="w-3 h-3 bg-orange-400 rounded-full animate-pulse"></span>
+              Próximos
             </h3>
 
             <div class="space-y-3">
               <div
                 v-for="(turn, index) in waitingList"
                 :key="turn.id"
-                class="bg-gray-50 rounded-lg p-4 flex items-center border border-gray-200"
-                :class="{ 'opacity-50': index > 4 }"
+                class="rounded-xl p-4 flex items-center transition-all duration-300 border"
+                :class="getWaitingItemClass(index, turn.priority)"
               >
-                <span class="text-gray-400 text-sm w-8">{{ index + 1 }}</span>
-                <div class="flex-1">
-                  <span class="text-2xl font-bold text-gray-800">{{ turn.code }}</span>
+                <span class="text-2xl font-black w-10 text-center" :class="index < 3 ? 'text-orange-400' : 'text-gray-500'">{{ index + 1 }}</span>
+                <div class="flex-1 ml-3">
+                  <span class="text-3xl font-black text-white">{{ turn.code }}</span>
                   <span
                     v-if="turn.priority > 0"
-                    class="ml-2 text-xs px-2 py-1 rounded text-white"
-                    :class="turn.priority === 2 ? 'bg-red-500' : 'bg-yellow-500'"
+                    class="ml-3 text-xs px-3 py-1 rounded-full font-bold uppercase animate-pulse"
+                    :class="turn.priority === 2 ? 'bg-red-500 text-white' : 'bg-yellow-500 text-black'"
                   >
                     {{ turn.priority === 2 ? 'URGENTE' : 'PREFERENTE' }}
                   </span>
                 </div>
-                <span class="text-sm text-gray-500">{{ turn.service_name }}</span>
+                <span class="text-sm text-gray-400 font-medium">{{ turn.service_name }}</span>
               </div>
 
-              <p v-if="waitingList.length === 0" class="text-center py-8 text-gray-400">
+              <p v-if="waitingList.length === 0" class="text-center py-12 text-gray-500 text-xl">
                 No hay turnos en espera
               </p>
-            </div>
-          </div>
-
-          <!-- Estadisticas -->
-          <div class="mt-6 bg-white rounded-xl p-4 shadow-md border border-gray-100">
-            <h3 class="text-lg font-semibold mb-3 text-center text-gray-600 uppercase tracking-wider">Estadísticas del Día</h3>
-            <div class="grid grid-cols-2 gap-3 text-center">
-              <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                <p class="text-3xl font-bold text-gray-800">{{ displayData.stats?.total || 0 }}</p>
-                <p class="text-xs text-gray-500 uppercase">Total</p>
-              </div>
-              <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                <p class="text-3xl font-bold text-green-600">{{ displayData.stats?.by_status?.DONE || 0 }}</p>
-                <p class="text-xs text-gray-500 uppercase">Atendidos</p>
-              </div>
             </div>
           </div>
         </div>
@@ -145,6 +162,7 @@ const audioElement = ref(null)
 const currentTime = ref('')
 const currentDate = ref('')
 const lastAnnouncedTurnId = ref(null)
+const isNewTurn = ref(false)
 
 const displayData = computed(() => turnsStore.displayData)
 
@@ -155,12 +173,32 @@ const currentCalledTurn = computed(() => {
 
 const recentCalledTurns = computed(() => {
   const called = displayData.value.called || []
-  return called.slice(1, 7) // Los siguientes 6 turnos llamados
+  return called.slice(1, 9) // Los siguientes 8 turnos llamados
+})
+
+const inServiceTurns = computed(() => {
+  return displayData.value.inService || []
 })
 
 const waitingList = computed(() => {
   return displayData.value.waiting || []
 })
+
+function getWaitingItemClass(index, priority) {
+  if (priority === 2) {
+    return 'bg-red-900/50 border-red-500/50'
+  }
+  if (priority === 1) {
+    return 'bg-yellow-900/30 border-yellow-500/30'
+  }
+  if (index === 0) {
+    return 'bg-gradient-to-r from-orange-600/30 to-orange-500/20 border-orange-500/50'
+  }
+  if (index < 3) {
+    return 'bg-slate-700/50 border-slate-600'
+  }
+  return 'bg-slate-800/30 border-slate-700/50 opacity-60'
+}
 
 function updateClock() {
   const now = new Date()
@@ -171,10 +209,24 @@ function updateClock() {
 function playNotificationSound() {
   if (audioElement.value) {
     audioElement.value.currentTime = 0
+    audioElement.value.volume = 1.0
     audioElement.value.play().catch(() => {
       // Autoplay bloqueado por el navegador
     })
   }
+}
+
+function triggerNewTurnAnimation() {
+  isNewTurn.value = true
+  // Reproducir sonido 3 veces con intervalo
+  playNotificationSound()
+  setTimeout(() => playNotificationSound(), 800)
+  setTimeout(() => playNotificationSound(), 1600)
+
+  // Quitar animacion despues de 5 segundos
+  setTimeout(() => {
+    isNewTurn.value = false
+  }, 5000)
 }
 
 function handleMqttUpdate(data) {
@@ -182,10 +234,10 @@ function handleMqttUpdate(data) {
     // Recargar datos
     turnsStore.fetchDisplayData()
 
-    // Reproducir sonido si es un nuevo turno
+    // Reproducir sonido y animacion si es un nuevo turno
     if (data.turn && data.turn.id !== lastAnnouncedTurnId.value) {
       lastAnnouncedTurnId.value = data.turn.id
-      playNotificationSound()
+      triggerNewTurnAnimation()
     }
   }
 
@@ -224,18 +276,29 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-@keyframes fade-in-scale {
-  0% {
-    opacity: 0;
-    transform: scale(0.95);
+@keyframes pulse-border {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.7), 0 0 60px rgba(6, 182, 212, 0.5);
   }
-  100% {
-    opacity: 1;
-    transform: scale(1);
+  50% {
+    box-shadow: 0 0 0 20px rgba(250, 204, 21, 0), 0 0 100px rgba(6, 182, 212, 0.8);
   }
 }
 
-.announcement-enter {
-  animation: fade-in-scale 0.5s ease-out;
+.animate-pulse-border {
+  animation: pulse-border 1.5s ease-in-out infinite;
+}
+
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 0.5s ease-in-out infinite;
 }
 </style>

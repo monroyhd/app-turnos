@@ -16,11 +16,14 @@ const Turn = {
         'doctors.full_name as doctor_name',
         'doctors.office_number',
         'services.name as service_name',
-        'services.prefix as service_prefix'
+        'services.prefix as service_prefix',
+        'recursos.nombre as consultorio_nombre',
+        'recursos.ubicacion as consultorio_ubicacion'
       )
       .leftJoin('patients', 'turns.patient_id', 'patients.id')
       .leftJoin('doctors', 'turns.doctor_id', 'doctors.id')
-      .leftJoin('services', 'turns.service_id', 'services.id');
+      .leftJoin('services', 'turns.service_id', 'services.id')
+      .leftJoin('recursos', 'turns.consultorio_id', 'recursos.id');
 
     if (filters.status) {
       if (Array.isArray(filters.status)) {
@@ -61,11 +64,14 @@ const Turn = {
         'doctors.office_number',
         'doctors.specialty as doctor_specialty',
         'services.name as service_name',
-        'services.prefix as service_prefix'
+        'services.prefix as service_prefix',
+        'recursos.nombre as consultorio_nombre',
+        'recursos.ubicacion as consultorio_ubicacion'
       )
       .leftJoin('patients', 'turns.patient_id', 'patients.id')
       .leftJoin('doctors', 'turns.doctor_id', 'doctors.id')
       .leftJoin('services', 'turns.service_id', 'services.id')
+      .leftJoin('recursos', 'turns.consultorio_id', 'recursos.id')
       .where('turns.id', id)
       .first();
   },
@@ -87,6 +93,7 @@ const Turn = {
         patient_id: turnData.patient_id,
         service_id: turnData.service_id,
         doctor_id: turnData.doctor_id,
+        consultorio_id: turnData.consultorio_id || null,
         status: TURN_STATUS.CREATED,
         priority: turnData.priority || 0,
         notes: turnData.notes,
@@ -173,11 +180,14 @@ const Turn = {
         'patients.full_name as patient_name',
         'doctors.full_name as doctor_name',
         'doctors.office_number',
-        'services.name as service_name'
+        'services.name as service_name',
+        'recursos.nombre as consultorio_nombre',
+        'recursos.ubicacion as consultorio_ubicacion'
       )
       .leftJoin('patients', 'turns.patient_id', 'patients.id')
       .leftJoin('doctors', 'turns.doctor_id', 'doctors.id')
       .leftJoin('services', 'turns.service_id', 'services.id')
+      .leftJoin('recursos', 'turns.consultorio_id', 'recursos.id')
       .whereIn('turns.status', [TURN_STATUS.WAITING, TURN_STATUS.CALLED])
       .whereRaw('DATE(turns.created_at) = CURRENT_DATE');
 

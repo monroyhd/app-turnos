@@ -9,9 +9,9 @@ class MqttClient {
   }
 
   connect(options = {}) {
-    const host = options.host || window.location.hostname
-    const port = options.port || 9001
-    const url = `ws://${host}:${port}`
+    // Usar ruta relativa via proxy Caddy - funciona con IP dinámica
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const url = `${protocol}//${window.location.host}/mqtt-ws`
 
     this.client = mqtt.connect(url, {
       clientId: `frontend-${Date.now()}`,

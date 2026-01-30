@@ -14,12 +14,13 @@ function generateCodeFromName(name) {
 
 const serviceSchema = Joi.object({
   name: Joi.string().max(100).required(),
+  code: Joi.string().max(20).allow('', null),  // Codigo opcional, si no se proporciona se genera del nombre
   description: Joi.string().allow('', null),
   estimated_duration: Joi.number().integer().min(1).max(480),
   tipo: Joi.string().valid('servicio', 'recurso'),
   categoria: Joi.string().max(50).allow('', null),
   is_active: Joi.boolean()
-}).unknown(true); // Ignorar campos extra como id, code, prefix, etc.
+}).unknown(true); // Ignorar campos extra como id, prefix, etc.
 
 const serviceController = {
   async list(req, res, next) {
@@ -93,14 +94,14 @@ const serviceController = {
         });
       }
 
-      // Generar codigo a partir del nombre
-      const code = generateCodeFromName(value.name);
+      // Usar codigo proporcionado, o generar del nombre si esta vacio
+      const code = value.code?.trim() || generateCodeFromName(value.name);
 
       const existing = await Service.findByCode(code);
       if (existing) {
         return res.status(409).json({
           success: false,
-          message: 'Ya existe un servicio con ese nombre/codigo'
+          message: 'Ya existe un servicio con ese codigo'
         });
       }
 
@@ -134,15 +135,20 @@ const serviceController = {
         });
       }
 
-      // Generar nuevo codigo si el nombre cambio
-      let code = existing.code;
-      if (value.name && value.name !== existing.name) {
+      // Si se proporciona codigo, usarlo; si no, mantener el existente
+      // Si no hay codigo existente y el nombre cambio, generar del nombre
+      let code = value.code?.trim() || existing.code;
+      if (!code && value.name && value.name !== existing.name) {
         code = generateCodeFromName(value.name);
+      }
+
+      // Verificar que el codigo no este duplicado (si cambio)
+      if (code && code !== existing.code) {
         const codeExists = await Service.findByCode(code);
         if (codeExists && codeExists.id !== existing.id) {
           return res.status(409).json({
             success: false,
-            message: 'Ya existe un servicio con ese nombre/codigo'
+            message: 'Ya existe un servicio con ese codigo'
           });
         }
       }
@@ -173,7 +179,7 @@ const serviceController = {
 
       res.json({
         success: true,
-        message: 'Servicio desactivado exitosamente'
+        message: 'Servicio eliminado exitosamente'
       });
     } catch (err) {
       next(err);

@@ -97,7 +97,7 @@ const authController = {
         email: Joi.string().email().required(),
         password: Joi.string().min(6).required(),
         full_name: Joi.string().max(100),
-        role: Joi.string().valid('admin', 'capturista', 'medico', 'display', 'admin_recurso', 'pan_recurso')
+        role: Joi.string().valid('admin', 'capturista', 'medico', 'display', 'admin_habitaciones', 'pan_recurso')
       });
 
       const { error, value } = schema.validate(req.body);
@@ -160,7 +160,7 @@ const authController = {
       const schema = Joi.object({
         full_name: Joi.string().max(100),
         username: Joi.string().min(3).max(50),
-        role: Joi.string().valid('admin', 'capturista', 'medico', 'display', 'admin_recurso', 'pan_recurso'),
+        role: Joi.string().valid('admin', 'capturista', 'medico', 'display', 'admin_habitaciones', 'pan_recurso'),
         is_active: Joi.boolean()
       });
 
@@ -248,7 +248,7 @@ const authController = {
         capturista: 'captura123#',
         medico: 'medico123',
         display: 'display123',
-        admin_recurso: 'recurso123#',
+        admin_habitaciones: 'habitacion123#',
         pan_recurso: 'panrecurso123'
       };
       const newPassword = passwords[user.role] || 'password123';

@@ -1,0 +1,50 @@
+# =============================================================================
+# Caddyfile - Configuración de Caddy para App-Turnos (Docker)
+# =============================================================================
+#
+# Este archivo configura Caddy como proxy reverso para los contenedores Docker:
+# - Proxy reverso para API backend (contenedor api)
+# - Proxy reverso para frontend (contenedor frontend)
+# - Manejo de SPA (Single Page Application) con Vue Router
+#
+# Nota: En Docker, los servicios se referencian por nombre de contenedor
+# =============================================================================
+
+:80 {
+    # Proxy reverso para API backend
+    handle /api/* {
+        reverse_proxy api:3000
+    }
+
+    # Proxy reverso para uploads/archivos subidos
+    handle /uploads/* {
+        reverse_proxy api:3000
+    }
+
+    # Proxy WebSocket para MQTT (permite conexión sin especificar IP/puerto)
+    handle /mqtt-ws {
+        reverse_proxy mosquitto:9001
+    }
+
+    # Frontend - servido desde contenedor frontend via nginx
+    handle {
+        reverse_proxy frontend:80
+    }
+
+    # Logging
+    log {
+        output stdout
+        format console
+    }
+
+    # Headers de seguridad básicos
+    header {
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+        -Server
+    }
+
+    # Compresión
+    encode gzip zstd
+}

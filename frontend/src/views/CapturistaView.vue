@@ -70,7 +70,21 @@
             >
               <option value="">Asignar despues</option>
               <option v-for="doctor in doctors" :key="doctor.id" :value="doctor.id">
-                {{ doctor.full_name }} - {{ doctor.office_number }}
+                {{ doctor.full_name }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Consultorio -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Consultorio</label>
+            <select
+              v-model="newTurn.consultorio_id"
+              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+            >
+              <option :value="null">-- Sin asignar --</option>
+              <option v-for="c in consultorios" :key="c.id" :value="c.id">
+                {{ c.nombre }} - {{ c.ubicacion || 'Sin ubicacion' }}
               </option>
             </select>
           </div>
@@ -200,6 +214,7 @@ const turnsStore = useTurnsStore()
 
 const services = ref([])
 const doctors = ref([])
+const consultorios = ref([])
 const patientSearch = ref('')
 const patientResults = ref([])
 const selectedPatient = ref(null)
@@ -209,6 +224,7 @@ const creating = ref(false)
 const newTurn = ref({
   service_id: '',
   doctor_id: '',
+  consultorio_id: null,
   priority: 0,
   notes: ''
 })
@@ -234,13 +250,15 @@ onMounted(async () => {
 async function loadData() {
   await turnsStore.fetchTurns({ today: true })
 
-  const [servicesRes, doctorsRes] = await Promise.all([
+  const [servicesRes, doctorsRes, consultoriosRes] = await Promise.all([
     api.get('/services?is_active=true&tipo=servicio'),
-    api.get('/doctors?is_active=true')
+    api.get('/doctors?is_active=true'),
+    api.get('/recursos?tipo=CONSULTORIO&is_active=true')
   ])
 
   services.value = servicesRes.data.data
   doctors.value = doctorsRes.data.data
+  consultorios.value = consultoriosRes.data.data || []
 }
 
 async function searchPatients() {
@@ -282,7 +300,7 @@ async function createTurn() {
   const result = await turnsStore.createTurn(turnData)
 
   if (result.success) {
-    newTurn.value = { service_id: '', doctor_id: '', priority: 0, notes: '' }
+    newTurn.value = { service_id: '', doctor_id: '', consultorio_id: null, priority: 0, notes: '' }
     selectedPatient.value = null
   } else {
     alert(result.message)

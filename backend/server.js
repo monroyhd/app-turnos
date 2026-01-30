@@ -50,6 +50,8 @@ app.use('/api/patients', require('./routes/patients'));
 app.use('/api/doctors', require('./routes/doctors'));
 app.use('/api/services', require('./routes/services'));
 app.use('/api/settings', require('./routes/settings'));
+app.use('/api/hospitalizaciones', require('./routes/hospitalizaciones'));
+app.use('/api/recursos', require('./routes/recursos'));
 
 // Ruta de health check
 app.get('/health', (req, res) => {
@@ -106,6 +108,28 @@ app.get('/', (req, res) => {
       settings: {
         'GET /api/settings': 'Obtener configuracion del sistema',
         'PUT /api/settings': 'Actualizar configuracion (admin, multipart/form-data)'
+      },
+      hospitalizaciones: {
+        'GET /api/hospitalizaciones': 'Listar hospitalizaciones',
+        'GET /api/hospitalizaciones/stats': 'Obtener estadisticas',
+        'GET /api/hospitalizaciones/:id': 'Obtener hospitalizacion por ID',
+        'POST /api/hospitalizaciones': 'Crear hospitalizacion',
+        'PUT /api/hospitalizaciones/:id': 'Actualizar hospitalizacion',
+        'DELETE /api/hospitalizaciones/:id': 'Desactivar hospitalizacion'
+      },
+      recursos: {
+        'GET /api/recursos': 'Listar recursos (filtrar por tipo, estado)',
+        'GET /api/recursos/:id': 'Obtener recurso con estado actual',
+        'POST /api/recursos': 'Crear recurso',
+        'PUT /api/recursos/:id': 'Actualizar recurso',
+        'DELETE /api/recursos/:id': 'Desactivar recurso',
+        'GET /api/recursos/uso/ocupados': 'Lista recursos ocupados',
+        'POST /api/recursos/:id/asignar': 'Asignar paciente a recurso',
+        'PUT /api/recursos/:id/actualizar-uso': 'Actualizar datos de uso',
+        'POST /api/recursos/:id/liberar': 'Liberar recurso (mueve a historial)',
+        'GET /api/recursos/historial/lista': 'Lista historial',
+        'GET /api/recursos/historial/stats': 'Estadisticas de uso',
+        'GET /api/recursos/:id/historial': 'Historial de un recurso'
       }
     }
   });

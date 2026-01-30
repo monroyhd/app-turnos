@@ -226,6 +226,7 @@ erDiagram
         int patient_id FK
         int service_id FK
         int doctor_id FK
+        int consultorio_id FK
         enum status
         int priority
         timestamp created_at
@@ -233,6 +234,8 @@ erDiagram
         timestamp called_at
         timestamp finished_at
     }
+
+    RECURSOS ||--o{ TURNS : "consultorio_id"
 
     TURN_HISTORY {
         int id PK
@@ -251,6 +254,74 @@ erDiagram
         timestamp created_at
         timestamp updated_at
     }
+
+    HOSPITALIZACIONES {
+        int id PK
+        string paciente_nombre
+        string paciente_apellidos
+        string telefono
+        string habitacion
+        int doctor_id FK
+        timestamp fecha_ingreso
+        timestamp fecha_egreso
+        enum estatus
+        text notas
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    RECURSOS {
+        int id PK
+        string nombre
+        string codigo UK
+        enum tipo
+        string ubicacion
+        int capacidad
+        text descripcion
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    USO_RECURSOS {
+        int id PK
+        int recurso_id FK UK
+        string paciente_nombre
+        string paciente_apellidos
+        string telefono
+        int doctor_id FK
+        timestamp fecha_inicio
+        enum estatus
+        text notas
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    HISTORIAL_RECURSOS {
+        int id PK
+        int recurso_id FK
+        string recurso_nombre
+        string recurso_tipo
+        string paciente_nombre
+        string paciente_apellidos
+        string telefono
+        int doctor_id FK
+        string doctor_nombre
+        string especialidad
+        timestamp fecha_inicio
+        timestamp fecha_fin
+        int duracion_minutos
+        string estatus_final
+        text notas
+        timestamp created_at
+    }
+
+    DOCTORS ||--o{ HOSPITALIZACIONES : "doctor_id"
+    RECURSOS ||--o{ USO_RECURSOS : "recurso_id"
+    RECURSOS ||--o{ HISTORIAL_RECURSOS : "recurso_id"
+    DOCTORS ||--o{ USO_RECURSOS : "doctor_id"
+    DOCTORS ||--o{ HISTORIAL_RECURSOS : "doctor_id"
 ```
 
 ## 7. Comunicacion MQTT
@@ -291,10 +362,47 @@ flowchart TB
     T1 --> E4
     T1 --> E5
 
-    T2 -->|WebSocket:9001| Doc
-    T2 -->|WebSocket:9001| Cap
-    T2 -->|WebSocket:9001| Disp
+    T2 -->|WebSocket via /mqtt-ws| Doc
+    T2 -->|WebSocket via /mqtt-ws| Cap
+    T2 -->|WebSocket via /mqtt-ws| Disp
 ```
+
+## 7.1 Arquitectura de Red
+
+```mermaid
+flowchart TB
+    subgraph Externa["Acceso Externo (Puerto 80)"]
+        Usuario[Usuario/Browser]
+    end
+
+    subgraph Caddy["Caddy Reverse Proxy :80"]
+        Route1["/api/* → localhost:3000"]
+        Route2["/uploads/* → localhost:3000"]
+        Route3["/mqtt-ws → localhost:9001"]
+        Route4["/* → frontend estático"]
+    end
+
+    subgraph Servicios["Servicios Internos (solo localhost)"]
+        API[Backend API<br/>localhost:3000]
+        MQTT[Mosquitto MQTT<br/>TCP: localhost:1883<br/>WS: localhost:9001]
+        PG[(PostgreSQL<br/>localhost:5432)]
+    end
+
+    Usuario -->|HTTP/WS :80| Caddy
+    Route1 --> API
+    Route2 --> API
+    Route3 --> MQTT
+    API -->|TCP| MQTT
+    API --> PG
+```
+
+### Beneficios de la Arquitectura
+| Aspecto | Descripcion |
+|---------|-------------|
+| **Seguridad** | Solo puerto 80 expuesto, servicios internos en localhost |
+| **IP Dinámica** | Frontend usa rutas relativas, funciona sin configurar IP |
+| **Simplicidad** | Todo el tráfico pasa por Caddy como punto único de entrada |
+| **HTTPS Ready** | Caddy puede agregar HTTPS sin cambios en servicios internos |
 
 ## 8. Endpoints API
 
@@ -340,6 +448,30 @@ flowchart LR
     subgraph Settings["/api/settings"]
         SET1[GET / - publico]
         SET2[PUT / - admin multipart]
+    end
+
+    subgraph Hosp["/api/hospitalizaciones"]
+        H1[GET / - listar]
+        H2[GET /stats - estadisticas]
+        H3[GET /:id - por ID]
+        H4[POST / - crear]
+        H5[PUT /:id - actualizar]
+        H6[DELETE /:id - desactivar]
+    end
+
+    subgraph Recursos["/api/recursos"]
+        R1[GET / - listar recursos]
+        R2[GET /:id - recurso con estado]
+        R3[POST / - crear recurso]
+        R4[PUT /:id - actualizar recurso]
+        R5[DELETE /:id - desactivar]
+        R6[GET /uso/ocupados - ocupados]
+        R7[POST /:id/asignar - asignar paciente]
+        R8[PUT /:id/actualizar-uso - actualizar uso]
+        R9[POST /:id/liberar - liberar recurso]
+        R10[GET /historial/lista - historial]
+        R11[GET /historial/stats - estadisticas]
+        R12[GET /:id/historial - historial recurso]
     end
 ```
 
@@ -479,4 +611,56 @@ flowchart TB
 
 ---
 
-**Ultima actualizacion:** 2026-01-18 (v8 - Campos tipo y categoria en servicios)
+## 12. Flujo de Gestion de Recursos Unificado
+
+```mermaid
+sequenceDiagram
+    participant A as Admin Recursos
+    participant API as Backend API
+    participant DB as PostgreSQL
+
+    Note over A,DB: 1. Crear Recurso
+    A->>API: POST /api/recursos
+    API->>DB: INSERT INTO recursos
+    API-->>A: 201 Created
+
+    Note over A,DB: 2. Asignar Paciente
+    A->>API: POST /api/recursos/:id/asignar
+    API->>DB: Verificar recurso libre
+    API->>DB: INSERT INTO uso_recursos
+    API-->>A: 201 Paciente asignado
+
+    Note over A,DB: 3. Actualizar Estado
+    A->>API: PUT /api/recursos/:id/actualizar-uso
+    API->>DB: UPDATE uso_recursos
+    API-->>A: 200 OK
+
+    Note over A,DB: 4. Liberar Recurso
+    A->>API: POST /api/recursos/:id/liberar
+    API->>DB: SELECT datos de uso_recursos
+    API->>DB: Calcular duracion
+    API->>DB: INSERT INTO historial_recursos
+    API->>DB: DELETE FROM uso_recursos
+    API-->>A: 200 Recurso liberado
+```
+
+### Tipos de Recursos
+| Tipo | Descripcion | Estatus Comunes |
+|------|-------------|-----------------|
+| CONSULTORIO | Consultorios medicos | OCUPADO |
+| HABITACION | Habitaciones de internado | HOSPITALIZACION, QUIROFANO, RECUPERACION, TERAPIA, URGENCIAS |
+
+### Estados de Uso
+| Estado | Descripcion |
+|--------|-------------|
+| OCUPADO | Ocupacion generica (consultorios) |
+| HOSPITALIZACION | Paciente hospitalizado |
+| QUIROFANO | En quirofano |
+| RECUPERACION | En recuperacion |
+| TERAPIA | En terapia |
+| URGENCIAS | Atencion de urgencias |
+| MANTENIMIENTO | Recurso en mantenimiento |
+
+---
+
+**Ultima actualizacion:** 2026-01-30 (v13 - Arquitectura de red via localhost, MQTT WebSocket via Caddy proxy /mqtt-ws)

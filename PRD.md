@@ -27,9 +27,9 @@ El sistema estará pensado para que **una IA o un equipo técnico** pueda desarr
 - MQTT sobre WebSocket
 
 ### Infraestructura
-- Caddy (reverse proxy + HTTPS)
-- Broker MQTT (EMQX o Mosquitto)
-- MySQL o PostgreSQL
+- Caddy (reverse proxy + HTTPS, único punto de entrada puerto 80)
+- Broker MQTT Mosquitto (solo localhost, acceso via Caddy /mqtt-ws)
+- PostgreSQL (solo localhost)
 - Docker / docker-compose
 
 ---
@@ -74,9 +74,15 @@ El sistema estará pensado para que **una IA o un equipo técnico** pueda desarr
 - Visualiza turnos llamados
 - Sin interacción
 
+### Admin Habitaciones
+- Solo visualiza y gestiona habitaciones (no consultorios)
+- Puede asignar pacientes, editar uso y liberar habitaciones
+- NO puede crear, configurar ni eliminar recursos
+
 ### Credenciales Automaticas
 - **Medicos:** username = employee_number o nombre normalizado, password = medico123
 - **Capturistas:** username = nombre normalizado, password = captura123#
+- **Admin Habitaciones:** password = habitacion123#
 - **Email:** username@hospital.com
 
 ---
@@ -95,11 +101,14 @@ NO_SHOW / CANCELLED
 ## 7. API REST
 
 ### Turnos
-POST /api/turns
+POST /api/turns (acepta consultorio_id opcional)
 GET /api/turns/doctor/:id
 PUT /api/turns/:id/call
 PUT /api/turns/:id/start
 PUT /api/turns/:id/finish
+
+### Recursos
+GET /api/recursos?tipo=CONSULTORIO&is_active=true (consultorios para selector)
 
 ### Configuracion del Sistema
 GET /api/settings (publico)
@@ -113,9 +122,13 @@ PUT /api/settings (admin, multipart/form-data para imagenes)
 hospital/{hospitalId}/turns/events
 
 ### Eventos
-TURN_CREATED  
-TURN_CALLED  
-TURN_FINISHED  
+TURN_CREATED
+TURN_CALLED
+TURN_FINISHED
+
+### Conexión WebSocket
+El frontend se conecta a MQTT via ruta relativa `/mqtt-ws` proxiada por Caddy.
+Esto permite funcionar con IP dinámica sin configuración adicional.  
 
 ---
 
@@ -133,7 +146,10 @@ doctors
 services (con tipo: servicio/recurso, categoria: texto)
 turns
 turn_history
-system_settings (nombre hospital, logo, fondo)  
+system_settings (nombre hospital, logo, fondo)
+recursos (catalogo de recursos fisicos)
+uso_recursos (estado actual de ocupacion)
+historial_recursos (registro historico de uso)  
 
 ---
 

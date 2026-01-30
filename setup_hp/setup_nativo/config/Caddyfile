@@ -1,0 +1,66 @@
+# =============================================================================
+# Caddyfile - Configuración de Caddy para App-Turnos (Instalación Nativa)
+# =============================================================================
+#
+# Este archivo configura Caddy como proxy reverso para:
+# - Servir frontend estático desde /apps-node/app-turnos/frontend/dist
+# - Proxy reverso para API backend en localhost:3000
+# - Manejo de SPA (Single Page Application) con Vue Router
+#
+# Ubicación: /etc/caddy/Caddyfile
+# =============================================================================
+
+:80 {
+    # Directorio raíz del frontend
+    root * /apps-node/app-turnos/frontend/dist
+
+    # Servir archivos estáticos
+    file_server
+
+    # Proxy reverso para API backend
+    handle /api/* {
+        reverse_proxy localhost:3000
+    }
+
+    # Proxy reverso para uploads/archivos subidos
+    handle /uploads/* {
+        reverse_proxy localhost:3000
+    }
+
+    # Proxy WebSocket para MQTT (permite conexión sin especificar IP/puerto)
+    handle /mqtt-ws {
+        reverse_proxy localhost:9001
+    }
+
+    # Manejo de SPA - redirigir rutas desconocidas a index.html
+    handle {
+        try_files {path} /index.html
+    }
+
+    # Logging
+    log {
+        output stdout
+        format console
+    }
+
+    # Headers de seguridad básicos
+    header {
+        # Prevenir clickjacking
+        X-Frame-Options "SAMEORIGIN"
+        # Prevenir MIME sniffing
+        X-Content-Type-Options "nosniff"
+        # XSS Protection
+        X-XSS-Protection "1; mode=block"
+        # Remover header del servidor
+        -Server
+    }
+
+    # Compresión
+    encode gzip zstd
+
+    # Cache para assets estáticos
+    @static {
+        path *.js *.css *.png *.jpg *.jpeg *.gif *.ico *.svg *.woff *.woff2
+    }
+    header @static Cache-Control "public, max-age=31536000"
+}

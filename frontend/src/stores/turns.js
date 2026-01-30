@@ -5,7 +5,7 @@ import api from '../services/api'
 export const useTurnsStore = defineStore('turns', () => {
   const turns = ref([])
   const queue = ref([])
-  const displayData = ref({ called: [], waiting: [], stats: {} })
+  const displayData = ref({ called: [], inService: [], waiting: [], stats: {} })
   const loading = ref(false)
   const error = ref(null)
 

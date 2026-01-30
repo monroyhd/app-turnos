@@ -7,6 +7,7 @@ const createTurnSchema = Joi.object({
   patient_id: Joi.number().integer(),
   service_id: Joi.number().integer().required(),
   doctor_id: Joi.number().integer(),
+  consultorio_id: Joi.number().integer().allow(null),
   priority: Joi.number().integer().min(0).max(2),
   notes: Joi.string()
 });

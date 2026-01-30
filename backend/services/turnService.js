@@ -36,6 +36,7 @@ const TurnService = {
       patient_id: data.patient_id,
       service_id: data.service_id,
       doctor_id: data.doctor_id,
+      consultorio_id: data.consultorio_id,
       priority,
       notes: data.notes,
       created_by: userId
@@ -105,10 +106,37 @@ const TurnService = {
   async finishTurn(turnId, userId, notes = null) {
     const turn = await Turn.updateStatus(turnId, TURN_STATUS.DONE, userId, notes);
 
+    // Guardar en historial de recursos
+    await this.saveToHistorial(turn);
+
     mqttService.publishTurnEvent(MQTT_EVENTS.TURN_FINISHED, turn);
     mqttService.publishQueueUpdate();
 
     return turn;
+  },
+
+  async saveToHistorial(turn) {
+    // Solo guardar si tiene consultorio asignado
+    if (!turn.consultorio_id) return;
+
+    const HistorialRecurso = require('../models/historialRecurso');
+
+    await HistorialRecurso.create({
+      turn_id: turn.id,
+      recurso_id: turn.consultorio_id,
+      recurso_nombre: turn.consultorio_nombre || null,
+      recurso_tipo: 'CONSULTORIO',
+      paciente_nombre: turn.patient_name || 'Sin nombre',
+      paciente_apellidos: '',
+      telefono: null,
+      doctor_id: turn.doctor_id,
+      doctor_nombre: turn.doctor_name || null,
+      especialidad: turn.doctor_specialty || null,
+      fecha_inicio: turn.service_started_at,
+      fecha_fin: turn.finished_at,
+      estatus_final: 'DONE',
+      notas: turn.notes
+    });
   },
 
   async markNoShow(turnId, userId) {
@@ -156,6 +184,12 @@ const TurnService = {
       today: true
     });
 
+    // Obtener turnos en atención (para mostrar en tarjetas)
+    const inServiceTurns = await Turn.findAll({
+      status: TURN_STATUS.IN_SERVICE,
+      today: true
+    });
+
     // Obtener proximos en espera
     const waitingTurns = await Turn.findAll({
       status: TURN_STATUS.WAITING,
@@ -167,6 +201,7 @@ const TurnService = {
 
     return {
       called: calledTurns,
+      inService: inServiceTurns,
       waiting: waitingTurns.slice(0, 10), // Solo los proximos 10
       stats
     };
