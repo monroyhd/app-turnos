@@ -73,7 +73,7 @@ const User = {
   },
 
   async delete(id) {
-    return db(TABLE).where({ id }).update({ is_active: false });
+    return db(TABLE).where({ id }).del();
   },
 
   async verifyPassword(user, password) {
