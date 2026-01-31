@@ -1,5 +1,40 @@
 # Changelog - Sistema de Turnos Hospitalarios
 
+## [2026-01-30] - Limpieza: Eliminación de directorio infra/ obsoleto
+
+### Resumen
+Se eliminó el directorio `infra/` que contenía archivos Docker legacy duplicados.
+
+### Archivos Eliminados
+```
+infra/
+├── Caddyfile
+├── docker-compose.yml
+├── Dockerfile.api
+├── Dockerfile.frontend
+└── mosquitto.conf
+```
+
+### Motivo
+Los archivos en `infra/` estaban desactualizados y duplicados. La configuración mejorada y mantenida activamente se encuentra en `setup_hp/setup_docker/`.
+
+### Cambios Asociados
+- Actualizado README.md: referencia a Docker ahora apunta a `setup_hp/setup_docker/`
+- Estructura del proyecto actualizada
+
+### Ubicación Actual de Configuración Docker
+```
+setup_hp/setup_docker/
+├── Caddyfile                # Configuración de Caddy actualizada
+├── docker-compose.yml       # Docker Compose mejorado
+├── config/
+│   ├── Caddyfile
+│   └── mosquitto.conf
+└── ...
+```
+
+---
+
 ## [2026-01-30] - Fix: PostgreSQL Enum user_role en Servidor Nuevo
 
 ### Problema

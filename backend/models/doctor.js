@@ -29,7 +29,11 @@ const Doctor = {
   },
 
   async findById(id) {
-    const doctor = await db(TABLE).where({ id }).first();
+    const doctor = await db(TABLE)
+      .select('doctors.*', 'users.username')
+      .leftJoin('users', 'doctors.user_id', 'users.id')
+      .where('doctors.id', id)
+      .first();
 
     if (doctor) {
       doctor.services = await db('doctor_services')

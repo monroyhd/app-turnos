@@ -140,12 +140,12 @@ const recursoController = {
         });
       }
 
-      // Verificar que el codigo no exista
-      const existente = await Recurso.findByCodigo(value.codigo);
+      // Verificar que el codigo no exista para el mismo tipo
+      const existente = await Recurso.findByCodigo(value.codigo, value.tipo);
       if (existente) {
         return res.status(409).json({
           success: false,
-          message: `Ya existe un recurso con el codigo ${value.codigo}`
+          message: `Ya existe un ${value.tipo.toLowerCase()} con el codigo ${value.codigo}`
         });
       }
 
@@ -179,13 +179,14 @@ const recursoController = {
         });
       }
 
-      // Si cambia el codigo, verificar que no exista
+      // Si cambia el codigo, verificar que no exista para el mismo tipo
       if (value.codigo && value.codigo !== existing.codigo) {
-        const existente = await Recurso.findByCodigo(value.codigo);
+        const tipo = value.tipo || existing.tipo;
+        const existente = await Recurso.findByCodigo(value.codigo, tipo);
         if (existente) {
           return res.status(409).json({
             success: false,
-            message: `Ya existe un recurso con el codigo ${value.codigo}`
+            message: `Ya existe un ${tipo.toLowerCase()} con el codigo ${value.codigo}`
           });
         }
       }

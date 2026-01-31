@@ -101,7 +101,7 @@ const doctorController = {
 
   async create(req, res, next) {
     try {
-      const { error, value } = doctorCreateSchema.validate(req.body);
+      const { error, value } = doctorCreateSchema.validate(req.body, { stripUnknown: true });
       if (error) {
         return res.status(400).json({
           success: false,

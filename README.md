@@ -16,7 +16,7 @@ Sistema de gestion de turnos hospitalarios con actualizacion en tiempo real via 
 app-turnos/
 ├── backend/           # API Node.js/Express
 ├── frontend/          # Vue.js 3 + Tailwind
-├── infra/            # Docker, Mosquitto config
+├── setup_hp/          # Scripts de instalación (Docker y Nativo)
 └── PRD.md            # Documento de requisitos
 ```
 
@@ -29,7 +29,7 @@ app-turnos/
 ## Instalacion Rapida con Docker
 
 ```bash
-cd infra
+cd setup_hp/setup_docker
 docker-compose up -d
 ```
 

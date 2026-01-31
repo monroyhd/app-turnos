@@ -31,8 +31,12 @@ const Recurso = {
     return db(TABLE).where({ id }).first();
   },
 
-  async findByCodigo(codigo) {
-    return db(TABLE).where({ codigo }).first();
+  async findByCodigo(codigo, tipo = null) {
+    const query = db(TABLE).where({ codigo });
+    if (tipo) {
+      query.andWhere({ tipo });
+    }
+    return query.first();
   },
 
   async create(data) {

@@ -371,8 +371,15 @@
           </div>
           <div v-if="editingDoctor">
             <label class="block text-sm font-medium text-gray-700">Usuario de Acceso</label>
-            <input v-model="doctorForm.username" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md font-mono" placeholder="j.perez">
-            <p class="text-xs text-gray-500 mt-1">Nombre de usuario para iniciar sesion</p>
+            <template v-if="editingDoctor.user_id">
+              <input v-model="doctorForm.username" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md font-mono" placeholder="j.perez">
+              <p class="text-xs text-gray-500 mt-1">Nombre de usuario para iniciar sesion</p>
+            </template>
+            <template v-else>
+              <p class="mt-1 text-sm text-amber-600 bg-amber-50 p-2 rounded-md">
+                Este medico no tiene usuario de acceso asociado (fue creado antes del sistema de usuarios automaticos)
+              </p>
+            </template>
           </div>
           <div v-if="!editingDoctor" class="bg-gray-50 rounded-md p-3 text-sm text-gray-600">
             <p><strong>Nota:</strong> Se generara automaticamente:</p>
@@ -382,7 +389,7 @@
             </ul>
           </div>
           <div v-if="editingDoctor" class="pt-2 border-t border-gray-200 space-y-2">
-            <button type="button" @click="resetDoctorPassword" class="w-full py-2 px-4 bg-orange-500 text-white rounded-md hover:bg-orange-600">
+            <button v-if="editingDoctor.user_id" type="button" @click="resetDoctorPassword" class="w-full py-2 px-4 bg-orange-500 text-white rounded-md hover:bg-orange-600">
               Restablecer Contrasena (medico123)
             </button>
             <button type="button" @click="deleteDoctor" class="w-full py-2 px-4 bg-red-500 text-white rounded-md hover:bg-red-600">

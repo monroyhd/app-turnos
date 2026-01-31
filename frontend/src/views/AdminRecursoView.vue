@@ -22,9 +22,15 @@
     </div>
 
     <!-- Mensaje cuando no hay recursos -->
-    <div v-if="categorias.length === 0 && activeTab !== 'historial'" class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-      <p class="text-yellow-800">No hay recursos registrados en el sistema.</p>
-      <p class="text-sm text-yellow-600 mt-2">Los tipos de recursos apareceran como pestanas cuando se agreguen al sistema.</p>
+    <div v-if="categorias.length === 0" class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center mb-6">
+      <p class="text-yellow-800 font-medium">No hay recursos registrados en el sistema.</p>
+      <p class="text-sm text-yellow-600 mt-2">Agregue recursos (habitaciones, consultorios, etc.) para comenzar.</p>
+      <button
+        @click="abrirModalRecurso(null, null)"
+        class="mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold shadow-md"
+      >
+        + Agregar Primer Recurso
+      </button>
     </div>
 
     <!-- Tab: Categoría dinámica -->
@@ -712,6 +718,9 @@ watch(categorias, (newCategorias) => {
   // Solo establecer si activeTab está vacío o no es válido
   if (newCategorias.length > 0 && (!activeTab.value || activeTab.value === '')) {
     activeTab.value = newCategorias[0].toLowerCase()
+  } else if (newCategorias.length === 0 && (!activeTab.value || activeTab.value === '')) {
+    // Si no hay categorías, establecer 'historial' como default para que algo esté activo
+    activeTab.value = 'historial'
   }
 }, { immediate: true })
 

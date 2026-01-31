@@ -8,13 +8,16 @@ exports.up = function(knex) {
     .createTable('recursos', table => {
       table.increments('id').primary();
       table.string('nombre', 100).notNullable();           // "Consultorio 101", "Habitación A-205"
-      table.string('codigo', 20).unique();                  // "C101", "H-A205"
+      table.string('codigo', 20);                          // "C101", "H-A205"
       table.enum('tipo', ['CONSULTORIO', 'HABITACION']).notNullable();
       table.string('ubicacion', 100).nullable();            // "Piso 1", "Ala Norte"
       table.integer('capacidad').defaultTo(1);
       table.text('descripcion').nullable();
       table.boolean('is_active').defaultTo(true);
       table.timestamps(true, true);
+
+      // Código único por tipo (permite mismo código en diferentes tipos)
+      table.unique(['codigo', 'tipo']);
     })
     // Tabla 2: Estado actual - un registro por recurso ocupado
     .createTable('uso_recursos', table => {
