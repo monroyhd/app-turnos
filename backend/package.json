@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "migrate": "knex migrate:latest",
     "migrate:rollback": "knex migrate:rollback",
-    "seed": "knex seed:run"
+    "seed": "knex seed:run",
+    "sync-sequences": "node database/sync-sequences.js"
   },
   "keywords": [
     "api",

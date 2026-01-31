@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const { syncSequencesWithKnex } = require('../sync-sequences');
 
 exports.seed = async function(knex) {
   // Limpiar tablas
@@ -79,4 +80,9 @@ exports.seed = async function(knex) {
     { id: 2, curp: 'LOPM900215MDFRRL02', full_name: 'Maria Lopez Perez', phone: '5557654321', is_preferential: true },
     { id: 3, full_name: 'Jose Sanchez (sin CURP)', phone: '5559876543', is_preferential: false }
   ]);
+
+  // Sincronizar secuencias de PostgreSQL para evitar errores de "llave duplicada"
+  // Esto es necesario porque insertamos registros con IDs específicos
+  console.log('\n--- Sincronizando secuencias de PostgreSQL ---');
+  await syncSequencesWithKnex(knex);
 };

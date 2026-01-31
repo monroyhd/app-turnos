@@ -253,6 +253,19 @@ npx knex seed:run --env production 2>&1 || {
 print_success "Seeds ejecutados"
 
 # =============================================================================
+# Sincronizar secuencias de PostgreSQL
+# =============================================================================
+
+print_step "Sincronizando secuencias de PostgreSQL..."
+
+# Las secuencias se sincronizan automáticamente en el seed, pero ejecutamos
+# también el script por seguridad en caso de que el seed falle parcialmente
+npm run sync-sequences 2>&1 || {
+    print_warning "Error sincronizando secuencias, continuando de todos modos..."
+}
+print_success "Secuencias sincronizadas"
+
+# =============================================================================
 # Verificar conexión
 # =============================================================================
 
