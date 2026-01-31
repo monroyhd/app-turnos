@@ -3,4 +3,4 @@ dist/
 .env
 logs/
 *.log
-
+backend/logs/access.log
