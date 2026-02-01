@@ -1,6 +1,9 @@
 node_modules/
 dist/
 .env
-logs/
+
+
+# Logs
 *.log
-backend/logs/access.log
+logs/
+**/*.log

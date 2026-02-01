@@ -6,6 +6,16 @@ class MqttClient {
     this.connected = false
     this.handlers = new Map()
     this.hospitalId = 'hospital-1'
+
+    // Page Visibility API para reconectar en Safari cuando la pestaña se reactiva
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && !this.connected && this.client) {
+          console.log('MQTT: Pestaña visible, reconectando...')
+          this.client.reconnect()
+        }
+      })
+    }
   }
 
   connect(options = {}) {
@@ -16,7 +26,10 @@ class MqttClient {
     this.client = mqtt.connect(url, {
       clientId: `frontend-${Date.now()}`,
       clean: true,
-      reconnectPeriod: 1000
+      reconnectPeriod: 5000,    // Menos agresivo (era 1000ms)
+      keepalive: 30,            // Heartbeat cada 30 segundos (evita suspension en Safari)
+      connectTimeout: 10000,    // Timeout de conexión
+      resubscribe: true         // Re-suscribir automáticamente al reconectar
     })
 
     this.client.on('connect', () => {

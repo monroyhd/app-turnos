@@ -76,6 +76,7 @@
                 class="bg-gradient-to-br from-emerald-800/60 to-emerald-900/60 rounded-xl p-4 text-center border-2 border-emerald-500/50 shadow-lg"
               >
                 <p class="text-3xl font-black text-white">{{ turn.code }}</p>
+                <p v-if="turn.patient_name" class="text-sm text-white/80 truncate">{{ turn.patient_name }}</p>
                 <p class="text-sm text-emerald-300 font-medium">{{ turn.consultorio_nombre || turn.office_number || '-' }}</p>
                 <p class="text-xs text-emerald-200/70 mt-1 truncate">{{ turn.doctor_name || '' }}</p>
               </div>
@@ -121,14 +122,17 @@
               >
                 <span class="text-2xl font-black w-10 text-center" :class="index < 3 ? 'text-orange-400' : 'text-gray-500'">{{ index + 1 }}</span>
                 <div class="flex-1 ml-3">
-                  <span class="text-3xl font-black text-white">{{ turn.code }}</span>
-                  <span
-                    v-if="turn.priority > 0"
-                    class="ml-3 text-xs px-3 py-1 rounded-full font-bold uppercase animate-pulse"
-                    :class="turn.priority === 2 ? 'bg-red-500 text-white' : 'bg-yellow-500 text-black'"
-                  >
-                    {{ turn.priority === 2 ? 'URGENTE' : 'PREFERENTE' }}
-                  </span>
+                  <div class="flex items-center gap-2">
+                    <span class="text-3xl font-black text-white">{{ turn.code }}</span>
+                    <span
+                      v-if="turn.priority > 0"
+                      class="text-xs px-3 py-1 rounded-full font-bold uppercase animate-pulse"
+                      :class="turn.priority === 2 ? 'bg-red-500 text-white' : 'bg-yellow-500 text-black'"
+                    >
+                      {{ turn.priority === 2 ? 'URGENTE' : 'PREFERENTE' }}
+                    </span>
+                  </div>
+                  <p v-if="turn.patient_name" class="text-sm text-gray-300 truncate">{{ turn.patient_name }}</p>
                 </div>
                 <span class="text-sm text-gray-400 font-medium">{{ turn.service_name }}</span>
               </div>

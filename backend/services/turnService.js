@@ -7,6 +7,20 @@ const mqttService = require('./mqttService');
 
 const TurnService = {
   async createTurn(data, userId) {
+    // Validar: si no hay patient_id, se requiere patient_name y patient_phone
+    if (!data.patient_id) {
+      if (!data.patient_name || !data.patient_name.trim()) {
+        const error = new Error('El nombre del paciente es obligatorio');
+        error.statusCode = 400;
+        throw error;
+      }
+      if (!data.patient_phone || !data.patient_phone.trim()) {
+        const error = new Error('El teléfono del paciente es obligatorio');
+        error.statusCode = 400;
+        throw error;
+      }
+    }
+
     // Obtener servicio para el prefijo
     const service = await Service.findById(data.service_id);
     if (!service) {
@@ -17,8 +31,16 @@ const TurnService = {
 
     // Obtener paciente si existe
     let patient = null;
+    let patientName = data.patient_name?.trim() || null;
+    let patientPhone = data.patient_phone?.trim() || null;
+
     if (data.patient_id) {
       patient = await Patient.findById(data.patient_id);
+      // Si hay paciente registrado, usar sus datos como respaldo
+      if (patient) {
+        patientName = patientName || patient.full_name;
+        patientPhone = patientPhone || patient.phone;
+      }
     }
 
     // Determinar prioridad
@@ -33,7 +55,9 @@ const TurnService = {
     // Crear turno
     const turn = await Turn.create({
       code,
-      patient_id: data.patient_id,
+      patient_id: data.patient_id || null,
+      patient_name: patientName,
+      patient_phone: patientPhone,
       service_id: data.service_id,
       doctor_id: data.doctor_id,
       consultorio_id: data.consultorio_id,
@@ -128,7 +152,7 @@ const TurnService = {
       recurso_tipo: 'CONSULTORIO',
       paciente_nombre: turn.patient_name || 'Sin nombre',
       paciente_apellidos: '',
-      telefono: null,
+      telefono: turn.patient_phone || null,
       doctor_id: turn.doctor_id,
       doctor_nombre: turn.doctor_name || null,
       especialidad: turn.doctor_specialty || null,

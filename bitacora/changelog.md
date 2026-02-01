@@ -1,5 +1,117 @@
 # Changelog - Sistema de Turnos Hospitalarios
 
+## [2026-01-31] - Fix: Ordenamiento Chrome + WebSocket Safari
+
+### Problemas Corregidos
+
+#### 1. Ordenamiento no funciona en Chrome (pero sí en Safari)
+- **Causa**: Chrome es más estricto con la reevaluación de `computed()` cuando arrays se modifican con `unshift()`
+- **Solución**: Cambiar `unshift()` por reasignación completa del array para forzar reactividad
+
+#### 2. WebSocket cerrado en Safari ("closed due to suspension")
+- **Causa**: Safari suspende WebSockets en pestañas inactivas
+- **Solución**: Agregar keepalive, Page Visibility API para reconectar al reactivar pestaña
+
+### Archivos Modificados
+
+#### `frontend/src/services/mqttClient.js`
+- Agregado **Page Visibility API** en constructor para reconectar cuando Safari reactiva la pestaña
+- Cambiado `reconnectPeriod: 1000` → `5000` (menos agresivo)
+- Agregado `keepalive: 30` (heartbeat cada 30 segundos)
+- Agregado `connectTimeout: 10000`
+- Agregado `resubscribe: true` (re-suscribir automáticamente al reconectar)
+
+#### `frontend/src/stores/turns.js`
+- Línea 88 `createTurn()`: `turns.value.unshift(...)` → `turns.value = [newTurn, ...turns.value]`
+- Línea 123 `handleMqttMessage()`: `turns.value.unshift(turn)` → `turns.value = [turn, ...turns.value]`
+
+#### `frontend/src/views/CapturistaView.vue`
+- Ordenamiento cambiado de `b.id - a.id` a comparación por `created_at` parseado
+- Más robusto para casos donde IDs no sean secuenciales
+
+### Verificación
+1. **Chrome**: Crear turnos → verificar que aparecen arriba de la lista ✓
+2. **Safari**: Abrir pestaña → dejar inactiva 2+ min → reactivar → verificar reconexión MQTT
+3. **Ambos navegadores**: Verificar que turnos se ordenan igual (más nuevo primero)
+
+---
+
+## [2026-01-31] - Ordenar turnos del más nuevo al más antiguo
+
+### Cambio
+- Modificado `CapturistaView.vue`: Agregada computed property `sortedTurns` para ordenar turnos por fecha de creación descendente
+- **Antes**: `v-for="turn in turnsStore.turns"` (sin orden definido)
+- **Después**: `v-for="turn in sortedTurns"` (ordenados por `created_at` DESC)
+
+### Resultado
+- Los turnos más recientes aparecen primero en la lista "Turnos del Día"
+- Las actualizaciones en tiempo real vía MQTT ya estaban implementadas y funcionan correctamente
+
+---
+
+## [2026-01-31] - Ampliar área de Turnos del Día
+
+### Cambio
+- Modificado `CapturistaView.vue` línea 115: altura máxima del contenedor de turnos
+- **Antes**: `max-h-96` (384px fijo, ~3 turnos visibles)
+- **Después**: `max-h-[calc(100vh-300px)]` (adaptable al viewport)
+
+### Resultado
+- Mayor visibilidad de turnos sin necesidad de scroll
+- Interfaz se adapta al tamaño de pantalla
+
+---
+
+## [2026-01-31] - Mejoras al Panel de Capturista y Visualización de Turnos
+
+### Resumen
+Se implementaron mejoras al flujo de creación de turnos para hacer el paciente registrado opcional, permitir cancelar turnos desde cualquier estado, cambiar búsqueda de CURP a teléfono, y mostrar el nombre del paciente en la pantalla pública.
+
+### Cambios Realizados
+
+#### 1. Paciente registrado opcional
+- Migración `014_turn_patient_fields.js`: Agregados campos `patient_name` y `patient_phone` a tabla `turns`
+- Los campos `patient_name` y `patient_phone` son ahora obligatorios en la creación del turno
+- El campo `patient_id` es opcional (para vincular a paciente registrado)
+- Se usa COALESCE en las queries para priorizar datos del turno sobre datos del paciente vinculado
+
+#### 2. Cancelar turnos desde cualquier estado
+- Actualizado `backend/utils/constants.js`: Estado CALLED ahora permite transición a CANCELLED
+- Estados que permiten cancelación: CREATED, WAITING, CALLED, IN_SERVICE
+- Botón "Cancelar Turno" visible en panel capturista para todos los estados activos
+
+#### 3. Búsqueda por teléfono
+- Modificado `backend/models/patient.js`: Búsqueda ahora usa teléfono en lugar de CURP
+- Actualizado placeholder en CapturistaView: "Buscar por nombre o teléfono"
+
+#### 4. Mostrar nombre del paciente
+- Actualizado `PublicDisplayView.vue`: Muestra nombre del paciente en cola de espera y turnos en atención
+
+### Archivos Modificados
+```
+backend/
+├── database/migrations/014_turn_patient_fields.js (nuevo)
+├── models/patient.js
+├── models/turn.js
+├── services/turnService.js
+├── controllers/turnController.js
+└── utils/constants.js
+
+frontend/src/views/
+├── CapturistaView.vue
+└── PublicDisplayView.vue
+```
+
+### Verificación
+- ✅ Crear turno sin paciente registrado (solo nombre y teléfono)
+- ✅ Crear turno con paciente registrado
+- ✅ Búsqueda de pacientes por teléfono
+- ✅ Cancelar turno en estado WAITING
+- ✅ Cancelar turno en estado CALLED
+- ✅ Nombre del paciente visible en pantalla pública
+
+---
+
 ## [2026-01-30] - Limpieza: Eliminación de directorio infra/ obsoleto
 
 ### Resumen

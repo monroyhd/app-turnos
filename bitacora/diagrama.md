@@ -55,6 +55,7 @@ stateDiagram-v2
     CALLED --> IN_SERVICE: Iniciar atencion
     CALLED --> NO_SHOW: No se presento
     CALLED --> WAITING: Volver a cola
+    CALLED --> CANCELLED: Cancelar
     IN_SERVICE --> DONE: Finalizar
     IN_SERVICE --> CANCELLED: Cancelar
     DONE --> [*]

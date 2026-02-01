@@ -8,42 +8,28 @@
         <h2 class="text-lg font-semibold mb-4">Crear Nuevo Turno</h2>
 
         <form @submit.prevent="createTurn" class="space-y-4">
-          <!-- Buscar/Registrar Paciente -->
+          <!-- Nombre del paciente (obligatorio) -->
           <div>
-            <label class="block text-sm font-medium text-gray-700">Paciente</label>
-            <div class="flex space-x-2 mt-1">
-              <input
-                v-model="patientSearch"
-                type="text"
-                placeholder="Buscar por CURP o nombre..."
-                class="flex-1 px-3 py-2 border border-gray-300 rounded-md"
-                @input="searchPatients"
-              >
-              <button
-                type="button"
-                @click="showNewPatientForm = true"
-                class="px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-              >
-                + Nuevo
-              </button>
-            </div>
-            <!-- Resultados de busqueda -->
-            <div v-if="patientResults.length > 0" class="mt-2 border rounded-md max-h-40 overflow-y-auto">
-              <div
-                v-for="patient in patientResults"
-                :key="patient.id"
-                @click="selectPatient(patient)"
-                class="p-2 hover:bg-gray-100 cursor-pointer"
-              >
-                <span class="font-medium">{{ patient.full_name }}</span>
-                <span v-if="patient.curp" class="text-gray-500 text-sm ml-2">{{ patient.curp }}</span>
-              </div>
-            </div>
-            <!-- Paciente seleccionado -->
-            <div v-if="selectedPatient" class="mt-2 p-2 bg-primary-50 rounded-md flex justify-between items-center">
-              <span>{{ selectedPatient.full_name }}</span>
-              <button type="button" @click="selectedPatient = null" class="text-red-500">x</button>
-            </div>
+            <label class="block text-sm font-medium text-gray-700">Nombre del Paciente *</label>
+            <input
+              v-model="newTurn.patient_name"
+              type="text"
+              required
+              placeholder="Nombre completo"
+              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+            >
+          </div>
+
+          <!-- Teléfono del paciente (obligatorio) -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Teléfono *</label>
+            <input
+              v-model="newTurn.patient_phone"
+              type="tel"
+              required
+              placeholder="10 dígitos"
+              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+            >
           </div>
 
           <!-- Servicio -->
@@ -114,7 +100,7 @@
 
           <button
             type="submit"
-            :disabled="!newTurn.service_id || creating"
+            :disabled="!newTurn.service_id || !newTurn.patient_name || !newTurn.patient_phone || creating"
             class="w-full py-2 px-4 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
           >
             {{ creating ? 'Creando...' : 'Crear Turno' }}
@@ -126,9 +112,9 @@
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold mb-4">Turnos del Dia</h2>
 
-        <div class="space-y-3 max-h-96 overflow-y-auto">
+        <div class="space-y-3 max-h-[calc(100vh-300px)] overflow-y-auto">
           <div
-            v-for="turn in turnsStore.turns"
+            v-for="turn in sortedTurns"
             :key="turn.id"
             class="border rounded-lg p-3"
             :class="getPriorityClass(turn.priority)"
@@ -164,48 +150,29 @@
                 Cancelar
               </button>
             </div>
+            <!-- Cancelar disponible para WAITING, CALLED, IN_SERVICE -->
+            <div v-else-if="['WAITING', 'CALLED', 'IN_SERVICE'].includes(turn.status)" class="mt-2">
+              <button
+                @click="cancelTurn(turn.id)"
+                class="px-3 py-1 bg-red-500 text-white rounded text-sm"
+              >
+                Cancelar Turno
+              </button>
+            </div>
           </div>
 
-          <p v-if="turnsStore.turns.length === 0" class="text-gray-500 text-center py-4">
+          <p v-if="sortedTurns.length === 0" class="text-gray-500 text-center py-4">
             No hay turnos registrados hoy
           </p>
         </div>
       </div>
     </div>
 
-    <!-- Modal Nuevo Paciente -->
-    <div v-if="showNewPatientForm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-        <h3 class="text-lg font-semibold mb-4">Registrar Nuevo Paciente</h3>
-        <form @submit.prevent="createPatient" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700">Nombre Completo *</label>
-            <input v-model="newPatient.full_name" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700">CURP</label>
-            <input v-model="newPatient.curp" maxlength="18" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md uppercase">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700">Telefono</label>
-            <input v-model="newPatient.phone" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
-          </div>
-          <div class="flex items-center">
-            <input type="checkbox" v-model="newPatient.is_preferential" id="preferential" class="mr-2">
-            <label for="preferential" class="text-sm text-gray-700">Paciente preferencial</label>
-          </div>
-          <div class="flex space-x-2">
-            <button type="submit" class="flex-1 py-2 px-4 bg-primary-600 text-white rounded-md">Guardar</button>
-            <button type="button" @click="showNewPatientForm = false" class="flex-1 py-2 px-4 bg-gray-200 rounded-md">Cancelar</button>
-          </div>
-        </form>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useTurnsStore } from '../stores/turns'
 import api from '../services/api'
 import mqttClient from '../services/mqttClient'
@@ -215,13 +182,11 @@ const turnsStore = useTurnsStore()
 const services = ref([])
 const doctors = ref([])
 const consultorios = ref([])
-const patientSearch = ref('')
-const patientResults = ref([])
-const selectedPatient = ref(null)
-const showNewPatientForm = ref(false)
 const creating = ref(false)
 
 const newTurn = ref({
+  patient_name: '',
+  patient_phone: '',
   service_id: '',
   doctor_id: '',
   consultorio_id: null,
@@ -229,11 +194,13 @@ const newTurn = ref({
   notes: ''
 })
 
-const newPatient = ref({
-  full_name: '',
-  curp: '',
-  phone: '',
-  is_preferential: false
+// Ordenar turnos del más nuevo al más antiguo (por fecha de creación)
+const sortedTurns = computed(() => {
+  return [...turnsStore.turns].sort((a, b) => {
+    const dateA = new Date(a.created_at).getTime()
+    const dateB = new Date(b.created_at).getTime()
+    return dateB - dateA
+  })
 })
 
 onMounted(async () => {
@@ -261,47 +228,23 @@ async function loadData() {
   consultorios.value = consultoriosRes.data.data || []
 }
 
-async function searchPatients() {
-  if (patientSearch.value.length < 2) {
-    patientResults.value = []
-    return
-  }
-
-  const res = await api.get(`/patients?search=${patientSearch.value}`)
-  patientResults.value = res.data.data.slice(0, 5)
-}
-
-function selectPatient(patient) {
-  selectedPatient.value = patient
-  patientResults.value = []
-  patientSearch.value = ''
-}
-
-async function createPatient() {
-  try {
-    const res = await api.post('/patients', newPatient.value)
-    if (res.data.success) {
-      selectedPatient.value = res.data.data
-      showNewPatientForm.value = false
-      newPatient.value = { full_name: '', curp: '', phone: '', is_preferential: false }
-    }
-  } catch (err) {
-    alert(err.response?.data?.message || 'Error creando paciente')
-  }
-}
-
 async function createTurn() {
   creating.value = true
   const turnData = {
-    ...newTurn.value,
-    patient_id: selectedPatient.value?.id
+    patient_name: newTurn.value.patient_name,
+    patient_phone: newTurn.value.patient_phone,
+    service_id: newTurn.value.service_id,
+    doctor_id: newTurn.value.doctor_id,
+    consultorio_id: newTurn.value.consultorio_id,
+    priority: newTurn.value.priority,
+    notes: newTurn.value.notes,
+    patient_id: null
   }
 
   const result = await turnsStore.createTurn(turnData)
 
   if (result.success) {
-    newTurn.value = { service_id: '', doctor_id: '', consultorio_id: null, priority: 0, notes: '' }
-    selectedPatient.value = null
+    newTurn.value = { patient_name: '', patient_phone: '', service_id: '', doctor_id: '', consultorio_id: null, priority: 0, notes: '' }
   } else {
     alert(result.message)
   }
@@ -322,7 +265,7 @@ function getStatusClass(status) {
   const classes = {
     CREATED: 'bg-gray-100 text-gray-800',
     WAITING: 'bg-yellow-100 text-yellow-800',
-    CALLED: 'bg-blue-100 text-blue-800',
+    CALLED: 'bg-green-100 text-green-800 animate-pulse-slow',
     IN_SERVICE: 'bg-green-100 text-green-800',
     DONE: 'bg-gray-200 text-gray-600',
     NO_SHOW: 'bg-red-100 text-red-800',
@@ -354,3 +297,18 @@ function formatTime(dateString) {
   return new Date(dateString).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
 }
 </script>
+
+<style scoped>
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2s ease-in-out infinite;
+}
+</style>

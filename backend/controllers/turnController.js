@@ -4,12 +4,14 @@ const Doctor = require('../models/doctor');
 const Joi = require('joi');
 
 const createTurnSchema = Joi.object({
-  patient_id: Joi.number().integer(),
+  patient_id: Joi.number().integer().allow(null),
+  patient_name: Joi.string().max(100).required(),
+  patient_phone: Joi.string().max(20).required(),
   service_id: Joi.number().integer().required(),
-  doctor_id: Joi.number().integer(),
+  doctor_id: Joi.number().integer().allow(null),
   consultorio_id: Joi.number().integer().allow(null),
   priority: Joi.number().integer().min(0).max(2),
-  notes: Joi.string()
+  notes: Joi.string().allow('', null)
 });
 
 const turnController = {

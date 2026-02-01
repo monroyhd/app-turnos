@@ -12,7 +12,7 @@ const Patient = {
     if (filters.search) {
       query = query.where(function() {
         this.where('full_name', 'ilike', `%${filters.search}%`)
-          .orWhere('curp', 'ilike', `%${filters.search}%`);
+          .orWhere('phone', 'ilike', `%${filters.search}%`);
       });
     }
 

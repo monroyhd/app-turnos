@@ -62,7 +62,9 @@ El sistema estará pensado para que **una IA o un equipo técnico** pueda desarr
 
 ### Capturista
 - Registra pacientes
-- Crea turnos
+- Crea turnos (nombre y teléfono obligatorios, paciente registrado opcional)
+- Busca pacientes por nombre o teléfono
+- Cancela turnos en cualquier estado activo
 - Consulta colas
 
 ### Médico
@@ -101,11 +103,16 @@ NO_SHOW / CANCELLED
 ## 7. API REST
 
 ### Turnos
-POST /api/turns (acepta consultorio_id opcional)
+POST /api/turns
+- Campos obligatorios: `patient_name`, `patient_phone`, `service_id`
+- Campos opcionales: `patient_id` (vincula a paciente registrado), `doctor_id`, `consultorio_id`, `priority`, `notes`
+- Paciente registrado opcional: si no se proporciona `patient_id`, el turno se crea solo con nombre y teléfono
+
 GET /api/turns/doctor/:id
 PUT /api/turns/:id/call
 PUT /api/turns/:id/start
 PUT /api/turns/:id/finish
+PUT /api/turns/:id/cancel (disponible desde CREATED, WAITING, CALLED, IN_SERVICE)
 
 ### Recursos
 GET /api/recursos?tipo=CONSULTORIO&is_active=true (consultorios para selector)

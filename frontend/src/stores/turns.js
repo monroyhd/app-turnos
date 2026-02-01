@@ -85,7 +85,8 @@ export const useTurnsStore = defineStore('turns', () => {
     try {
       const response = await api.post('/turns', turnData)
       if (response.data.success) {
-        turns.value.unshift(response.data.data)
+        // Reasignación completa para forzar reactividad en Chrome
+        turns.value = [response.data.data, ...turns.value]
         return { success: true, data: response.data.data }
       }
       return { success: false, message: response.data.message }
@@ -120,7 +121,8 @@ export const useTurnsStore = defineStore('turns', () => {
     switch (event) {
       case 'TURN_CREATED':
         if (!turns.value.find(t => t.id === turn.id)) {
-          turns.value.unshift(turn)
+          // Reasignación completa para forzar reactividad en Chrome
+          turns.value = [turn, ...turns.value]
         }
         break
       case 'TURN_CALLED':

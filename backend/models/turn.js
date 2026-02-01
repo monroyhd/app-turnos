@@ -11,7 +11,8 @@ const Turn = {
     let query = db(TABLE)
       .select(
         'turns.*',
-        'patients.full_name as patient_name',
+        db.raw('COALESCE(turns.patient_name, patients.full_name) as patient_name'),
+        db.raw('COALESCE(turns.patient_phone, patients.phone) as patient_phone'),
         'patients.curp as patient_curp',
         'doctors.full_name as doctor_name',
         'doctors.office_number',
@@ -57,7 +58,8 @@ const Turn = {
     return db(TABLE)
       .select(
         'turns.*',
-        'patients.full_name as patient_name',
+        db.raw('COALESCE(turns.patient_name, patients.full_name) as patient_name'),
+        db.raw('COALESCE(turns.patient_phone, patients.phone) as patient_phone'),
         'patients.curp as patient_curp',
         'patients.is_preferential as patient_preferential',
         'doctors.full_name as doctor_name',
@@ -90,7 +92,9 @@ const Turn = {
     const [id] = await db(TABLE)
       .insert({
         code: turnData.code,
-        patient_id: turnData.patient_id,
+        patient_id: turnData.patient_id || null,
+        patient_name: turnData.patient_name || null,
+        patient_phone: turnData.patient_phone || null,
         service_id: turnData.service_id,
         doctor_id: turnData.doctor_id,
         consultorio_id: turnData.consultorio_id || null,
@@ -177,7 +181,8 @@ const Turn = {
     let query = db(TABLE)
       .select(
         'turns.*',
-        'patients.full_name as patient_name',
+        db.raw('COALESCE(turns.patient_name, patients.full_name) as patient_name'),
+        db.raw('COALESCE(turns.patient_phone, patients.phone) as patient_phone'),
         'doctors.full_name as doctor_name',
         'doctors.office_number',
         'services.name as service_name',
@@ -229,7 +234,11 @@ const Turn = {
 
   async getCurrentlyInService(doctorId) {
     return db(TABLE)
-      .select('turns.*', 'patients.full_name as patient_name')
+      .select(
+        'turns.*',
+        db.raw('COALESCE(turns.patient_name, patients.full_name) as patient_name'),
+        db.raw('COALESCE(turns.patient_phone, patients.phone) as patient_phone')
+      )
       .leftJoin('patients', 'turns.patient_id', 'patients.id')
       .where('turns.doctor_id', doctorId)
       .where('turns.status', TURN_STATUS.IN_SERVICE)
