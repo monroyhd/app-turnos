@@ -7,3 +7,4 @@ dist/
 *.log
 logs/
 **/*.log
+backend/logs/access.log

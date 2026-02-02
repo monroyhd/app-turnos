@@ -40,6 +40,18 @@ update_backend() {
     fi
 }
 
+run_migrations() {
+    print_step "Ejecutando migraciones de base de datos..."
+    cd "$SCRIPT_DIR/backend"
+
+    if npx knex migrate:latest; then
+        print_success "Migraciones ejecutadas correctamente"
+    else
+        print_error "Error ejecutando migraciones"
+        exit 1
+    fi
+}
+
 build_frontend() {
     print_step "Instalando dependencias y compilando frontend..."
     cd "$SCRIPT_DIR/frontend"
@@ -103,6 +115,7 @@ echo ""
 # Ejecutar pasos
 pull_changes
 update_backend
+run_migrations
 build_frontend
 restart_backend
 verify_services
