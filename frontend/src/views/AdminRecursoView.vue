@@ -289,7 +289,7 @@
               <td class="px-4 py-3">
                 <span class="px-2 py-1 text-xs font-semibold rounded-full"
                       :class="getEstatusClass(registro.estatus_final)">
-                  {{ registro.estatus_final || '-' }}
+                  {{ formatResultado(registro.estatus_final) }}
                 </span>
               </td>
             </tr>
@@ -545,6 +545,19 @@
           </div>
 
           <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Resultado de la atencion *</label>
+            <select
+              v-model="liberarForm.resultado"
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="ATENDIDO">Atendido</option>
+              <option value="CANCELADO">Cancelado</option>
+              <option value="NO_SE_PRESENTO">No se presentó</option>
+            </select>
+          </div>
+
+          <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 mb-1">Notas finales (opcional)</label>
             <textarea
               v-model="liberarForm.notas_finales"
@@ -660,7 +673,8 @@ const asignarForm = ref({
 })
 
 const liberarForm = ref({
-  notas_finales: ''
+  notas_finales: '',
+  resultado: 'ATENDIDO'
 })
 
 // Funciones genéricas para recursos por tipo
@@ -716,11 +730,10 @@ onMounted(async () => {
 // Watcher para establecer primera categoría como activa cuando se cargan los datos
 watch(categorias, (newCategorias) => {
   // Solo establecer si activeTab está vacío o no es válido
-  if (newCategorias.length > 0 && (!activeTab.value || activeTab.value === '')) {
-    activeTab.value = newCategorias[0].toLowerCase()
-  } else if (newCategorias.length === 0 && (!activeTab.value || activeTab.value === '')) {
-    // Si no hay categorías, establecer 'historial' como default para que algo esté activo
-    activeTab.value = 'historial'
+  if (newCategorias.length > 0 && (!activeTab.value || activeTab.value === '' || activeTab.value === 'historial')) {
+    // Priorizar HABITACION como tab por defecto, si existe
+    const habitacionTab = newCategorias.find(c => c === 'HABITACION')
+    activeTab.value = habitacionTab ? 'habitacion' : newCategorias[0].toLowerCase()
   }
 }, { immediate: true })
 
@@ -899,7 +912,7 @@ async function saveAsignacion() {
 // Liberar modal
 function confirmarLiberar(recurso) {
   selectedRecurso.value = recurso
-  liberarForm.value = { notas_finales: '' }
+  liberarForm.value = { notas_finales: '', resultado: 'ATENDIDO' }
   errorMessage.value = ''
   showLiberarModal.value = true
 }
@@ -965,6 +978,12 @@ function formatDuracion(minutos) {
 
 function getEstatusClass(estatus) {
   const classes = {
+    'ATENDIDO': 'bg-green-100 text-green-800',
+    'DONE': 'bg-green-100 text-green-800',
+    'CANCELADO': 'bg-red-100 text-red-800',
+    'CANCELLED': 'bg-red-100 text-red-800',
+    'NO_SE_PRESENTO': 'bg-orange-100 text-orange-800',
+    'NO_SHOW': 'bg-orange-100 text-orange-800',
     'HOSPITALIZACION': 'bg-blue-100 text-blue-800',
     'QUIROFANO': 'bg-red-100 text-red-800',
     'RECUPERACION': 'bg-yellow-100 text-yellow-800',
@@ -974,6 +993,18 @@ function getEstatusClass(estatus) {
     'OCUPADO': 'bg-gray-100 text-gray-800'
   }
   return classes[estatus] || 'bg-gray-100 text-gray-800'
+}
+
+function formatResultado(estatus) {
+  const labels = {
+    'ATENDIDO': 'Atendido',
+    'DONE': 'Atendido',
+    'CANCELADO': 'Cancelado',
+    'CANCELLED': 'Cancelado',
+    'NO_SE_PRESENTO': 'No se presentó',
+    'NO_SHOW': 'No se presentó'
+  }
+  return labels[estatus] || estatus || '-'
 }
 
 function getEstatusBorderColor(estatus) {

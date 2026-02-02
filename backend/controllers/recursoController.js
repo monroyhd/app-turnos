@@ -55,7 +55,8 @@ const actualizarUsoSchema = Joi.object({
 });
 
 const liberarRecursoSchema = Joi.object({
-  notas_finales: Joi.string().allow('', null)
+  notas_finales: Joi.string().allow('', null),
+  resultado: Joi.string().valid('ATENDIDO', 'CANCELADO', 'NO_SE_PRESENTO').default('ATENDIDO')
 });
 
 // Utilidades
@@ -393,7 +394,7 @@ const recursoController = {
         especialidad: usoActual.doctor_especialidad,
         fecha_inicio: usoActual.fecha_inicio,
         fecha_fin: fechaFin,
-        estatus_final: usoActual.estatus,
+        estatus_final: value.resultado || 'ATENDIDO',
         notas: value.notas_finales || usoActual.notas
       });
 
