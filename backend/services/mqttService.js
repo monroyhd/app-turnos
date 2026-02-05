@@ -122,6 +122,21 @@ class MqttService {
     const topic = mqttConfig.topics.doctorQueue(this.hospitalId, doctorId);
     this.publish(topic, message);
   }
+
+  publishHabitacionUpdate(eventType, habitacion = null) {
+    const topic = mqttConfig.topics.habitacionesUpdates(this.hospitalId);
+    const message = {
+      event: eventType,
+      habitacion: habitacion ? {
+        id: habitacion.id,
+        codigo: habitacion.codigo,
+        nombre: habitacion.nombre
+      } : null,
+      timestamp: new Date().toISOString()
+    };
+
+    this.publish(topic, message);
+  }
 }
 
 // Singleton

@@ -93,19 +93,21 @@ const TurnService = {
       throw error;
     }
 
-    // Verificar si el doctor ya tiene un turno en servicio
-    const currentInService = await Turn.getCurrentlyInService(doctorId);
-    if (currentInService) {
-      const error = new Error('Ya tiene un paciente en atencion. Finalice primero el turno actual.');
-      error.statusCode = 400;
-      throw error;
-    }
+    // Solo verificar turno en servicio si hay doctorId
+    if (doctorId) {
+      const currentInService = await Turn.getCurrentlyInService(doctorId);
+      if (currentInService) {
+        const error = new Error('Ya tiene un paciente en atencion. Finalice primero el turno actual.');
+        error.statusCode = 400;
+        throw error;
+      }
 
-    // Actualizar doctor asignado si es diferente
-    if (turn.doctor_id !== doctorId) {
-      await require('knex')(require('../config/database')[process.env.NODE_ENV || 'development'])('turns')
-        .where({ id: turnId })
-        .update({ doctor_id: doctorId });
+      // Actualizar doctor asignado si es diferente
+      if (turn.doctor_id !== doctorId) {
+        await require('knex')(require('../config/database')[process.env.NODE_ENV || 'development'])('turns')
+          .where({ id: turnId })
+          .update({ doctor_id: doctorId });
+      }
     }
 
     const updatedTurn = await Turn.updateStatus(turnId, TURN_STATUS.CALLED, userId);

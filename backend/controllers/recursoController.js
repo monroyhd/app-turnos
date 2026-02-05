@@ -2,6 +2,7 @@ const Recurso = require('../models/recurso');
 const UsoRecurso = require('../models/usoRecurso');
 const HistorialRecurso = require('../models/historialRecurso');
 const Joi = require('joi');
+const mqttService = require('../services/mqttService');
 
 const TIPOS_VALIDOS = ['CONSULTORIO', 'HABITACION'];
 const ESTATUS_VALIDOS = [
@@ -299,6 +300,11 @@ const recursoController = {
         ...cleanedValue
       });
 
+      // Publicar evento MQTT para actualizar displays
+      if (recurso.tipo === 'HABITACION') {
+        mqttService.publishHabitacionUpdate('HABITACION_ASIGNADA', recurso);
+      }
+
       res.status(201).json({
         success: true,
         message: `Paciente asignado exitosamente a ${recurso.nombre}`,
@@ -340,6 +346,11 @@ const recursoController = {
       }
 
       const uso = await UsoRecurso.update(usoActual.id, cleanedValue);
+
+      // Publicar evento MQTT para actualizar displays
+      if (recurso.tipo === 'HABITACION') {
+        mqttService.publishHabitacionUpdate('HABITACION_ACTUALIZADA', recurso);
+      }
 
       res.json({
         success: true,
@@ -400,6 +411,11 @@ const recursoController = {
 
       // Eliminar uso actual
       await UsoRecurso.delete(usoActual.id);
+
+      // Publicar evento MQTT para actualizar displays
+      if (recurso.tipo === 'HABITACION') {
+        mqttService.publishHabitacionUpdate('HABITACION_LIBERADA', recurso);
+      }
 
       res.json({
         success: true,
@@ -492,6 +508,65 @@ const recursoController = {
           recursos_totales: statsPorTipo,
           uso_actual: statsUsoActual,
           historial: statsHistorial
+        }
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // ===========================================
+  // ENDPOINT PUBLICO PARA DISPLAY
+  // ===========================================
+
+  async getDisplayHabitaciones(req, res, next) {
+    try {
+      // Obtener solo habitaciones activas
+      const recursos = await Recurso.findAll({
+        tipo: 'HABITACION',
+        is_active: true
+      });
+
+      // Agregar estado de ocupacion a cada habitacion
+      const habitacionesConEstado = await Promise.all(
+        recursos.map(async (recurso) => {
+          const uso = await UsoRecurso.findByRecursoId(recurso.id);
+          return {
+            id: recurso.id,
+            codigo: recurso.codigo,
+            nombre: recurso.nombre,
+            ubicacion: recurso.ubicacion,
+            ocupado: !!uso,
+            estatus: uso ? uso.estatus : 'LIBRE',
+            paciente_nombre: uso ? `${uso.paciente_nombre} ${uso.paciente_apellidos || ''}`.trim() : null,
+            doctor_nombre: uso ? uso.doctor_nombre : null,
+            fecha_inicio: uso ? uso.fecha_inicio : null,
+            notas: uso ? uso.notas : null
+          };
+        })
+      );
+
+      // Calcular estadisticas
+      const total = habitacionesConEstado.length;
+      const ocupadas = habitacionesConEstado.filter(h => h.ocupado).length;
+      const libres = total - ocupadas;
+
+      // Conteo por estatus
+      const porEstatus = habitacionesConEstado.reduce((acc, h) => {
+        acc[h.estatus] = (acc[h.estatus] || 0) + 1;
+        return acc;
+      }, {});
+
+      res.json({
+        success: true,
+        data: {
+          habitaciones: habitacionesConEstado,
+          estadisticas: {
+            total,
+            ocupadas,
+            libres,
+            porEstatus
+          }
         }
       });
     } catch (err) {

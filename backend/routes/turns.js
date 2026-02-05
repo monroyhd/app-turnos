@@ -36,22 +36,22 @@ router.post('/', requireRole(['admin', 'capturista']), turnController.create);
 // Poner en espera
 router.put('/:id/waiting', requireRole(['admin', 'capturista']), turnController.setWaiting);
 
-// Llamar turno (medico o admin)
-router.put('/:id/call', requireRole(['admin', 'medico']), turnController.call);
+// Llamar turno (medico, admin o capturista)
+router.put('/:id/call', requireRole(['admin', 'medico', 'capturista']), turnController.call);
 
 // Iniciar atencion
-router.put('/:id/start', requireRole(['admin', 'medico']), turnController.start);
+router.put('/:id/start', requireRole(['admin', 'medico', 'capturista']), turnController.start);
 
 // Finalizar turno
-router.put('/:id/finish', requireRole(['admin', 'medico']), turnController.finish);
+router.put('/:id/finish', requireRole(['admin', 'medico', 'capturista']), turnController.finish);
 
 // Marcar como no presentado
-router.put('/:id/no-show', requireRole(['admin', 'medico']), turnController.noShow);
+router.put('/:id/no-show', requireRole(['admin', 'medico', 'capturista']), turnController.noShow);
 
 // Cancelar turno
 router.put('/:id/cancel', requireRole(['admin', 'capturista', 'medico']), turnController.cancel);
 
 // Volver a poner en espera (para volver a llamar)
-router.put('/:id/recall', requireRole(['admin', 'medico']), turnController.recall);
+router.put('/:id/recall', requireRole(['admin', 'medico', 'capturista']), turnController.recall);
 
 module.exports = router;

@@ -74,6 +74,7 @@ El sistema estará pensado para que **una IA o un equipo técnico** pueda desarr
 
 ### Público
 - Visualiza turnos llamados
+- Visualiza estado de habitaciones (pantalla display-hb)
 - Sin interacción
 
 ### Admin Habitaciones
@@ -116,6 +117,7 @@ PUT /api/turns/:id/cancel (disponible desde CREATED, WAITING, CALLED, IN_SERVICE
 
 ### Recursos
 GET /api/recursos?tipo=CONSULTORIO&is_active=true (consultorios para selector)
+GET /api/recursos/display-habitaciones (publico, datos para pantalla de habitaciones)
 
 ### Configuracion del Sistema
 GET /api/settings (publico)
@@ -139,10 +141,31 @@ Esto permite funcionar con IP dinámica sin configuración adicional.
 
 ---
 
-## 9. Pantalla pública
+## 9. Pantallas
+
+### /recepcion - Pantalla Minimalista de Recepcion
+- Formulario inline para crear turnos (nombre, telefono, servicio, doctor opcional)
+- Lista de turnos activos (WAITING, CALLED, IN_SERVICE)
+- Acciones rapidas por estado:
+  - WAITING: [Llamar] [Cancelar]
+  - CALLED: [Iniciar] [No se presento] [Cancelar]
+  - IN_SERVICE: [Finalizar] [Cancelar]
+- Estadisticas en tiempo real (esperando, llamados, en atencion, atendidos)
+- Doctor opcional para llamar turno
+- Roles permitidos: admin, capturista
+- Actualizacion via MQTT
+
+### /display - Turnos (publica)
 - Snapshot inicial vía REST
 - Actualizaciones vía MQTT
 - Modo pantalla completa
+
+### /display-hb - Habitaciones (publica)
+- Muestra grid con estado de todas las habitaciones
+- Colores por estado: LIBRE (verde), HOSPITALIZACION (rojo), QUIROFANO (rojo intenso), RECUPERACION (amarillo), TERAPIA (púrpura), URGENCIAS (naranja), MANTENIMIENTO (gris)
+- Auto-refresh cada 30 segundos
+- Estadísticas en footer (total, libres, ocupadas)
+- Diseño optimizado para TV/monitor grande
 
 ---
 

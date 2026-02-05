@@ -23,6 +23,7 @@ module.exports = {
   topics: {
     turnEvents: (hospitalId) => `hospital/${hospitalId}/turns/events`,
     displayUpdates: (hospitalId) => `hospital/${hospitalId}/display/updates`,
-    doctorQueue: (hospitalId, doctorId) => `hospital/${hospitalId}/doctor/${doctorId}/queue`
+    doctorQueue: (hospitalId, doctorId) => `hospital/${hospitalId}/doctor/${doctorId}/queue`,
+    habitacionesUpdates: (hospitalId) => `hospital/${hospitalId}/habitaciones/updates`
   }
 };

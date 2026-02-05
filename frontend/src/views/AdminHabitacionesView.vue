@@ -1,50 +1,20 @@
 <template>
   <div class="max-w-7xl mx-auto px-4 py-6">
-    <h1 class="text-2xl font-bold text-gray-900 mb-6">Gestion de Habitaciones</h1>
-
-    <!-- Tabs -->
-    <div class="border-b border-gray-200 mb-6">
-      <nav class="flex space-x-8">
-        <button
-          @click="activeTab = 'habitaciones'"
-          :class="[
-            'py-2 px-1 border-b-2 font-medium text-sm',
-            activeTab === 'habitaciones'
-              ? 'border-primary-500 text-primary-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          ]"
+    <div class="flex justify-between items-center flex-wrap gap-4 mb-6">
+      <h1 class="text-2xl font-bold text-gray-900">Gestion de Habitaciones</h1>
+      <div class="flex items-center gap-4">
+        <select
+          v-model="filtroEstado"
+          class="px-3 py-2 border border-gray-300 rounded-md text-sm"
         >
-          Habitaciones
-        </button>
-        <button
-          @click="activeTab = 'historial'"
-          :class="[
-            'py-2 px-1 border-b-2 font-medium text-sm',
-            activeTab === 'historial'
-              ? 'border-primary-500 text-primary-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          ]"
-        >
-          Historial
-        </button>
-      </nav>
+          <option value="">Todos los estados</option>
+          <option value="libre">Libre</option>
+          <option value="ocupado">Ocupado</option>
+        </select>
+      </div>
     </div>
 
-    <!-- Tab: Habitaciones -->
-    <div v-if="activeTab === 'habitaciones'" class="space-y-6">
-      <div class="flex justify-between items-center flex-wrap gap-4">
-        <h2 class="text-lg font-semibold">Habitaciones</h2>
-        <div class="flex items-center gap-4">
-          <select
-            v-model="filtroEstado"
-            class="px-3 py-2 border border-gray-300 rounded-md text-sm"
-          >
-            <option value="">Todos los estados</option>
-            <option value="libre">Libre</option>
-            <option value="ocupado">Ocupado</option>
-          </select>
-        </div>
-      </div>
+    <div class="space-y-6">
 
       <!-- Estadisticas -->
       <div v-if="habitaciones.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
@@ -123,103 +93,6 @@
             </tr>
           </tbody>
         </table>
-      </div>
-    </div>
-
-    <!-- Tab: Historial -->
-    <div v-if="activeTab === 'historial'" class="space-y-6">
-      <div class="flex justify-between items-center flex-wrap gap-4">
-        <h2 class="text-lg font-semibold">Historial de Uso</h2>
-        <div class="flex items-center gap-4">
-          <input
-            v-model="filtroHistorialFechaInicio"
-            type="date"
-            @change="loadHistorial"
-            class="px-3 py-2 border border-gray-300 rounded-md text-sm"
-            placeholder="Desde"
-          />
-          <input
-            v-model="filtroHistorialFechaFin"
-            type="date"
-            @change="loadHistorial"
-            class="px-3 py-2 border border-gray-300 rounded-md text-sm"
-            placeholder="Hasta"
-          />
-        </div>
-      </div>
-
-      <!-- Estadisticas del historial -->
-      <div v-if="statsHistorial" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-        <div class="bg-white p-3 rounded-lg shadow border-l-4 border-blue-500">
-          <div class="text-2xl font-bold">{{ statsHistorial.total }}</div>
-          <div class="text-sm text-gray-600">Total Usos</div>
-        </div>
-        <div class="bg-white p-3 rounded-lg shadow border-l-4 border-green-500">
-          <div class="text-2xl font-bold">{{ formatDuracion(statsHistorial.duracion_promedio_minutos) }}</div>
-          <div class="text-sm text-gray-600">Duracion Promedio</div>
-        </div>
-      </div>
-
-      <!-- Tabla de historial -->
-      <div class="bg-white rounded-lg shadow overflow-hidden">
-        <table class="min-w-full">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Habitacion</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paciente</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Doctor</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Inicio</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Fin</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duracion</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estatus</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200">
-            <tr v-if="historial.length === 0">
-              <td colspan="7" class="px-4 py-8 text-center text-gray-500">
-                No hay registros en el historial.
-              </td>
-            </tr>
-            <tr v-for="registro in historial" :key="registro.id">
-              <td class="px-4 py-3 font-medium">{{ registro.recurso_nombre }}</td>
-              <td class="px-4 py-3">{{ registro.paciente_nombre }} {{ registro.paciente_apellidos }}</td>
-              <td class="px-4 py-3">
-                <div>{{ registro.doctor_nombre || '-' }}</div>
-                <div v-if="registro.especialidad" class="text-xs text-gray-500">{{ registro.especialidad }}</div>
-              </td>
-              <td class="px-4 py-3">{{ formatDate(registro.fecha_inicio) }}</td>
-              <td class="px-4 py-3">{{ formatDate(registro.fecha_fin) }}</td>
-              <td class="px-4 py-3">{{ formatDuracion(registro.duracion_minutos) }}</td>
-              <td class="px-4 py-3">
-                <span class="px-2 py-1 text-xs font-semibold rounded-full"
-                      :class="getEstatusClass(registro.estatus_final)">
-                  {{ registro.estatus_final || '-' }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Paginacion -->
-      <div v-if="historialPagination.total > historialPagination.limit" class="flex justify-center mt-4">
-        <button
-          @click="loadHistorial(historialPagination.offset - historialPagination.limit)"
-          :disabled="historialPagination.offset === 0"
-          class="px-4 py-2 mr-2 bg-gray-200 rounded-md disabled:opacity-50"
-        >
-          Anterior
-        </button>
-        <span class="px-4 py-2">
-          {{ Math.floor(historialPagination.offset / historialPagination.limit) + 1 }} de {{ Math.ceil(historialPagination.total / historialPagination.limit) }}
-        </span>
-        <button
-          @click="loadHistorial(historialPagination.offset + historialPagination.limit)"
-          :disabled="historialPagination.offset + historialPagination.limit >= historialPagination.total"
-          class="px-4 py-2 ml-2 bg-gray-200 rounded-md disabled:opacity-50"
-        >
-          Siguiente
-        </button>
       </div>
     </div>
 
@@ -379,21 +252,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api from '../services/api'
 
 // Data
 const habitaciones = ref([])
 const doctors = ref([])
-const historial = ref([])
-const statsHistorial = ref(null)
-const historialPagination = ref({ total: 0, limit: 50, offset: 0 })
 
-// Tabs y filtros
-const activeTab = ref('habitaciones')
+// Filtros
 const filtroEstado = ref('')
-const filtroHistorialFechaInicio = ref('')
-const filtroHistorialFechaFin = ref('')
 
 // Modals
 const showAsignarModal = ref(false)
@@ -464,30 +331,6 @@ async function loadData() {
 
   } catch (error) {
     console.error('Error cargando datos:', error)
-  }
-}
-
-async function loadHistorial(offset = 0) {
-  try {
-    const params = new URLSearchParams()
-    params.append('limit', '50')
-    params.append('offset', offset.toString())
-    params.append('tipo', 'HABITACION')
-
-    if (filtroHistorialFechaInicio.value) params.append('fecha_inicio', filtroHistorialFechaInicio.value)
-    if (filtroHistorialFechaFin.value) params.append('fecha_fin', filtroHistorialFechaFin.value)
-
-    const [historialRes, statsRes] = await Promise.all([
-      api.get(`/recursos/historial/lista?${params.toString()}`),
-      api.get(`/recursos/historial/stats?${params.toString()}`)
-    ])
-
-    historial.value = historialRes.data.data || []
-    historialPagination.value = historialRes.data.pagination || { total: 0, limit: 50, offset: 0 }
-    statsHistorial.value = statsRes.data.data?.historial || null
-
-  } catch (error) {
-    console.error('Error cargando historial:', error)
   }
 }
 
@@ -600,17 +443,6 @@ function formatDate(dateStr) {
   })
 }
 
-function formatDuracion(minutos) {
-  if (!minutos) return '-'
-  if (minutos < 60) return `${minutos} min`
-  const horas = Math.floor(minutos / 60)
-  const mins = minutos % 60
-  if (horas < 24) return `${horas}h ${mins}m`
-  const dias = Math.floor(horas / 24)
-  const horasRestantes = horas % 24
-  return `${dias}d ${horasRestantes}h`
-}
-
 function getEstatusClass(estatus) {
   const classes = {
     'HOSPITALIZACION': 'bg-blue-100 text-blue-800',
@@ -624,10 +456,4 @@ function getEstatusClass(estatus) {
   return classes[estatus] || 'bg-gray-100 text-gray-800'
 }
 
-// Watch tab change to load historial
-watch(activeTab, (newTab) => {
-  if (newTab === 'historial' && historial.value.length === 0) {
-    loadHistorial()
-  }
-})
 </script>

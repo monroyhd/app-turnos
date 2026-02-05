@@ -60,15 +60,16 @@ class MqttClient {
   subscribeToTopics() {
     if (!this.client) return
 
-    // Suscribirse a eventos de turnos
+    // Suscribirse a eventos de turnos y habitaciones
     const turnsTopic = `hospital/${this.hospitalId}/turns/events`
     const displayTopic = `hospital/${this.hospitalId}/display/updates`
+    const habitacionesTopic = `hospital/${this.hospitalId}/habitaciones/updates`
 
-    this.client.subscribe([turnsTopic, displayTopic], (err) => {
+    this.client.subscribe([turnsTopic, displayTopic, habitacionesTopic], (err) => {
       if (err) {
         console.error('Error suscribiendo a topics:', err)
       } else {
-        console.log('MQTT: Suscrito a topics de turnos')
+        console.log('MQTT: Suscrito a topics de turnos y habitaciones')
       }
     })
   }

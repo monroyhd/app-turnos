@@ -15,6 +15,12 @@ const routes = [
     meta: { public: true }
   },
   {
+    path: '/display-hb',
+    name: 'DisplayHabitaciones',
+    component: () => import('../views/DisplayHabitacionesView.vue'),
+    meta: { public: true }
+  },
+  {
     path: '/',
     redirect: () => {
       const authStore = useAuthStore()
@@ -23,7 +29,7 @@ const routes = [
       switch (authStore.user?.role) {
         case 'admin': return '/admin'
         case 'admin_habitaciones': return '/admin-habitaciones'
-        case 'capturista': return '/capturista'
+        case 'capturista': return '/recepcion'
         case 'medico': return '/doctor'
         default: return '/login'
       }
@@ -52,6 +58,12 @@ const routes = [
     name: 'Doctor',
     component: () => import('../views/DoctorView.vue'),
     meta: { roles: ['admin', 'medico'] }
+  },
+  {
+    path: '/recepcion',
+    name: 'Recepcion',
+    component: () => import('../views/RecepcionView.vue'),
+    meta: { roles: ['admin', 'capturista'] }
   }
 ]
 

@@ -3,7 +3,16 @@ const router = express.Router();
 const recursoController = require('../controllers/recursoController');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 
-// Todas las rutas requieren autenticacion
+// ===========================================
+// RUTAS PUBLICAS (sin autenticacion)
+// ===========================================
+
+// Display publico de habitaciones (para pantallas/TV)
+router.get('/display-habitaciones', recursoController.getDisplayHabitaciones);
+
+// ===========================================
+// RUTAS PROTEGIDAS (requieren autenticacion)
+// ===========================================
 router.use(authenticateToken);
 
 // ===========================================

@@ -7,9 +7,11 @@ flowchart TB
     subgraph Frontend["Frontend (Vue.js 3)"]
         Login[LoginView]
         Cap[CapturistaView]
+        Recep[RecepcionView<br/>Pantalla Minimalista]
         Doc[DoctorView]
         Admin[AdminView + Config Tab]
         Display[PublicDisplayView<br/>Diseno Minimalista]
+        DisplayHB[DisplayHabitacionesView<br/>Grid de Habitaciones]
         SettingsStore[(Settings Store)]
     end
 
@@ -99,6 +101,8 @@ flowchart LR
 
     Cap --> A4
     Cap --> A5
+    Cap --> A6
+    Cap --> A7
 
     Med --> A6
     Med --> A7
@@ -350,7 +354,9 @@ flowchart TB
     subgraph Clientes["Clientes Frontend"]
         Doc[DoctorView]
         Cap[CapturistaView]
+        Recep[RecepcionView]
         Disp[PublicDisplayView]
+        DispHB[DisplayHabitacionesView]
     end
 
     TS -->|Publica| MS
@@ -473,6 +479,7 @@ flowchart LR
         R10[GET /historial/lista - historial]
         R11[GET /historial/stats - estadisticas]
         R12[GET /:id/historial - historial recurso]
+        R13[GET /display-habitaciones - PUBLICO]
     end
 ```
 
@@ -664,4 +671,148 @@ sequenceDiagram
 
 ---
 
-**Ultima actualizacion:** 2026-01-30 (v13 - Arquitectura de red via localhost, MQTT WebSocket via Caddy proxy /mqtt-ws)
+---
+
+## 13. Pantalla Publica de Habitaciones (/display-hb)
+
+```mermaid
+flowchart TB
+    subgraph Layout["DisplayHabitacionesView - Layout"]
+        direction TB
+        Header["Header<br/>Logo + Hospital + Reloj"]
+
+        subgraph Main["Grid de Habitaciones"]
+            H1["H-101<br/>LIBRE<br/>(verde)"]
+            H2["H-102<br/>HOSPITALIZACION<br/>(rojo)<br/>Paciente: Juan Perez<br/>Dr. Garcia"]
+            H3["H-103<br/>QUIROFANO<br/>(rojo intenso)"]
+            H4["H-104<br/>RECUPERACION<br/>(amarillo)"]
+            H5["..."]
+        end
+
+        Footer["Footer Estadisticas<br/>Total: X | Libres: X | Ocupadas: X"]
+    end
+```
+
+### Colores por Estado
+| Estado | Color | Clase CSS |
+|--------|-------|-----------|
+| LIBRE | Verde | `bg-green-600` |
+| HOSPITALIZACION | Rojo | `bg-red-600` |
+| QUIROFANO | Rojo intenso | `bg-red-700 animate-pulse` |
+| RECUPERACION | Amarillo | `bg-yellow-600` |
+| TERAPIA | Purpura | `bg-purple-600` |
+| URGENCIAS | Naranja | `bg-orange-600 animate-pulse` |
+| MANTENIMIENTO | Gris | `bg-gray-600` |
+
+### Flujo de Datos
+
+```mermaid
+sequenceDiagram
+    participant TV as Display TV
+    participant FE as DisplayHabitacionesView
+    participant API as Backend API
+    participant DB as PostgreSQL
+
+    Note over TV,DB: Carga Inicial
+    FE->>API: GET /api/recursos/display-habitaciones
+    API->>DB: SELECT habitaciones + uso_recursos
+    API-->>FE: {habitaciones[], estadisticas{}}
+    FE->>FE: Renderizar grid
+
+    Note over TV,DB: Auto-refresh cada 30s
+    loop Cada 30 segundos
+        FE->>API: GET /api/recursos/display-habitaciones
+        API-->>FE: Datos actualizados
+        FE->>FE: Re-renderizar grid
+    end
+```
+
+### Caracteristicas
+- **Sin autenticacion**: Endpoint publico para pantallas compartidas
+- **Auto-refresh**: Actualiza automaticamente cada 30 segundos
+- **Responsive**: Grid adaptable para diferentes tamanos de pantalla
+- **Optimizado para TV**: Fondo oscuro, texto grande, alto contraste
+
+---
+
+## 14. Pantalla de Recepcion (/recepcion)
+
+```mermaid
+flowchart TB
+    subgraph Layout["RecepcionView - Layout Minimalista"]
+        direction TB
+        Header["Header Simple<br/>Titulo + Usuario + Logout"]
+
+        subgraph Form["Formulario Inline (1 linea)"]
+            F1["Nombre *"]
+            F2["Telefono *"]
+            F3["Servicio *"]
+            F4["Doctor (opcional)"]
+            F5["[+ Crear]"]
+        end
+
+        subgraph Queue["Cola de Espera"]
+            direction TB
+            T1["A001 | Juan Perez | Consulta | Dr. Garcia<br/>WAITING | [Llamar] [Cancelar]"]
+            T2["A002 | Maria Lopez | Pediatria | -<br/>WAITING | [Selector Doctor] [Llamar] [Cancelar]"]
+            T3["A003 | Carlos Ruiz | Consulta | Dr. Garcia<br/>CALLED | [Iniciar] [No se presento] [Cancelar]"]
+            T4["A004 | Ana Martinez | Urgencias | Dr. Perez<br/>IN_SERVICE | [Finalizar] [Cancelar]"]
+        end
+
+        Footer["Estadisticas<br/>Esperando: X | Llamados: X | En atencion: X | Atendidos: X"]
+    end
+```
+
+### Acciones por Estado
+| Estado | Botones Disponibles |
+|--------|---------------------|
+| WAITING | [Llamar] [Cancelar] |
+| CALLED | [Iniciar] [No se presento] [Cancelar] |
+| IN_SERVICE | [Finalizar] [Cancelar] |
+
+### Caracteristicas
+- **Doctor opcional para llamar**: Se puede llamar un turno sin doctor asignado
+- **Selector de doctor inline**: Si el turno no tiene doctor, aparece un selector al lado del boton Llamar
+- **Tiempo real via MQTT**: Actualizaciones automaticas
+- **Roles permitidos**: admin, capturista
+
+### Flujo de Uso
+
+```mermaid
+sequenceDiagram
+    participant R as Recepcionista
+    participant FE as RecepcionView
+    participant API as Backend
+    participant MQTT as Mosquitto
+    participant D as Display
+
+    Note over R,D: 1. Crear Turno
+    R->>FE: Ingresar datos paciente
+    FE->>API: POST /api/turns
+    API->>MQTT: TURN_CREATED
+    API-->>FE: Turno creado
+    MQTT-->>D: Actualizar cola
+
+    Note over R,D: 2. Llamar Turno (con o sin doctor)
+    R->>FE: Click [Llamar]
+    FE->>API: PUT /api/turns/:id/call {doctor_id: opcional}
+    API->>MQTT: TURN_CALLED
+    API-->>FE: Turno llamado
+    MQTT-->>D: Mostrar turno llamado
+
+    Note over R,D: 3. Iniciar Atencion
+    R->>FE: Click [Iniciar]
+    FE->>API: PUT /api/turns/:id/start
+    API-->>FE: Atencion iniciada
+
+    Note over R,D: 4. Finalizar Turno
+    R->>FE: Click [Finalizar]
+    FE->>API: PUT /api/turns/:id/finish
+    API->>MQTT: TURN_FINISHED
+    API-->>FE: Turno finalizado
+    MQTT-->>D: Actualizar pantalla
+```
+
+---
+
+**Ultima actualizacion:** 2026-02-05 (v15 - Pantalla minimalista de recepcion /recepcion)
