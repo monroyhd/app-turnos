@@ -1,7 +1,13 @@
 exports.up = async function(knex) {
-  // Eliminar el indice unico global que bloquea reutilizacion de codigos
   await knex.schema.raw('DROP INDEX IF EXISTS idx_turns_code_date');
-  // Crear indice unico parcial: solo para turnos activos
+
+  // Cancelar turnos activos de dias anteriores (no deberian existir)
+  await knex.raw(`
+    UPDATE turns SET status = 'CANCELLED'
+    WHERE status IN ('CREATED', 'WAITING', 'CALLED', 'IN_SERVICE')
+    AND DATE(created_at) < CURRENT_DATE
+  `);
+
   await knex.schema.raw(`
     CREATE UNIQUE INDEX idx_turns_code_date_active
       ON turns(code)
