@@ -211,9 +211,14 @@ const doctorController = {
       // Desactivar el doctor
       await Doctor.delete(req.params.id);
 
-      // Desactivar el usuario asociado si existe
+      // Desactivar el usuario asociado y liberar username/email
       if (existing.user_id) {
-        await User.update(existing.user_id, { is_active: false });
+        const timestamp = Date.now();
+        await User.update(existing.user_id, {
+          is_active: false,
+          username: `deleted_${timestamp}_${existing.user_id}`,
+          email: `deleted_${timestamp}_${existing.user_id}@deleted.local`
+        });
       }
 
       res.json({

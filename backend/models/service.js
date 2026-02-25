@@ -29,8 +29,8 @@ const Service = {
   },
 
   async create(serviceData) {
-    // Generar prefix automaticamente de la primera letra del nombre
-    const prefix = serviceData.name.charAt(0).toUpperCase();
+    // Usar prefix proporcionado o generar de la primera letra del nombre
+    const prefix = serviceData.prefix?.trim().toUpperCase() || serviceData.name.charAt(0).toUpperCase();
 
     const [id] = await db(TABLE)
       .insert({
@@ -53,8 +53,11 @@ const Service = {
 
     if (serviceData.name) {
       updateData.name = serviceData.name;
-      // Actualizar prefix automaticamente si cambia el nombre
-      updateData.prefix = serviceData.name.charAt(0).toUpperCase();
+    }
+    // Usar prefix proporcionado, o mantener el existente
+    if (serviceData.prefix !== undefined) {
+      const trimmed = serviceData.prefix?.trim().toUpperCase();
+      if (trimmed) updateData.prefix = trimmed;
     }
     if (serviceData.code) updateData.code = serviceData.code;
     if (serviceData.description !== undefined) updateData.description = serviceData.description;

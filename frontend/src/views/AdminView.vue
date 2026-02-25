@@ -419,6 +419,11 @@
             <p class="mt-1 text-xs text-gray-500">Si se deja vacio, se generara automaticamente del nombre</p>
           </div>
           <div>
+            <label class="block text-sm font-medium text-gray-700">Prefijo</label>
+            <input v-model="serviceForm.prefix" maxlength="5" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md uppercase" placeholder="Ej: C, LAB, RX">
+            <p class="mt-1 text-xs text-gray-500">Prefijo para los turnos. Si se deja vacio, se usa la primera letra del nombre</p>
+          </div>
+          <div>
             <label class="block text-sm font-medium text-gray-700">Duracion Estimada (min)</label>
             <input type="number" v-model="serviceForm.estimated_duration" min="1" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
           </div>
@@ -525,7 +530,7 @@ const editingService = ref(null)
 const editingUser = ref(null)
 
 const doctorForm = ref({ full_name: '', specialty: '', email: '', phone: '', username: '' })
-const serviceForm = ref({ name: '', code: '', estimated_duration: 15, tipo: 'servicio', categoria: '' })
+const serviceForm = ref({ name: '', code: '', prefix: '', estimated_duration: 15, tipo: 'servicio', categoria: '' })
 const userForm = ref({ full_name: '', username: '', role: 'capturista', is_active: true })
 
 // Agrupar servicios por categoria
@@ -707,6 +712,7 @@ function openNewServiceModal() {
   serviceForm.value = {
     name: '',
     code: '',
+    prefix: '',
     estimated_duration: 15,
     tipo: 'servicio',
     categoria: ''
@@ -762,7 +768,7 @@ async function saveService() {
     }
     showServiceModal.value = false
     editingService.value = null
-    serviceForm.value = { name: '', code: '', estimated_duration: 15, tipo: 'servicio', categoria: '' }
+    serviceForm.value = { name: '', code: '', prefix: '', estimated_duration: 15, tipo: 'servicio', categoria: '' }
     await loadData()
   } catch (err) {
     alert(err.response?.data?.message || 'Error guardando servicio')
@@ -779,7 +785,7 @@ async function deleteService() {
     alert('Servicio eliminado exitosamente')
     showServiceModal.value = false
     editingService.value = null
-    serviceForm.value = { name: '', code: '', estimated_duration: 15, tipo: 'servicio', categoria: '' }
+    serviceForm.value = { name: '', code: '', prefix: '', estimated_duration: 15, tipo: 'servicio', categoria: '' }
     await loadData()
   } catch (err) {
     alert(err.response?.data?.message || 'Error eliminando servicio')

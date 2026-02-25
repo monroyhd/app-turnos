@@ -24,32 +24,41 @@
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
         <!-- Panel Principal: Turno Llamado -->
         <div class="lg:col-span-2 flex flex-col gap-6">
-          <!-- Turno Actual -->
-          <div
-            v-if="currentCalledTurn"
-            class="flex-1 rounded-3xl p-8 shadow-2xl border-4 transition-all duration-300"
-            :class="isNewTurn ? 'animate-pulse-border bg-gradient-to-br from-emerald-500 via-cyan-500 to-blue-600 border-yellow-400' : 'bg-gradient-to-br from-blue-600 via-cyan-600 to-teal-500 border-cyan-400/50'"
-          >
-            <div class="text-center h-full flex flex-col justify-center">
-              <p class="text-white/80 text-2xl mb-2 uppercase tracking-widest font-semibold">TURNO</p>
-              <p
-                class="text-9xl font-black text-white mb-4 drop-shadow-lg"
-                :class="{ 'animate-bounce-slow': isNewTurn }"
-              >
-                {{ currentCalledTurn.code }}
-              </p>
-              <p class="text-4xl font-semibold text-white/90 mb-8">
-                {{ currentCalledTurn.patient_name || 'Paciente' }}
-              </p>
+          <!-- Turnos Llamados -->
+          <div v-if="allCalledTurns.length > 0" class="flex-1 flex flex-col gap-4">
+            <div
+              v-for="(turn, index) in allCalledTurns"
+              :key="turn.id"
+              class="flex-1 rounded-3xl shadow-2xl border-4 transition-all duration-300"
+              :class="[
+                allCalledTurns.length === 1 ? 'p-8' : 'p-4',
+                isNewTurn && index === 0 ? 'animate-pulse-border bg-gradient-to-br from-emerald-500 via-cyan-500 to-blue-600 border-yellow-400' : 'bg-gradient-to-br from-blue-600 via-cyan-600 to-teal-500 border-cyan-400/50'
+              ]"
+            >
+              <div class="text-center h-full flex flex-col justify-center">
+                <p class="text-white/80 uppercase tracking-widest font-semibold" :class="allCalledTurns.length === 1 ? 'text-2xl mb-2' : 'text-lg mb-1'">TURNO</p>
+                <p
+                  class="font-black text-white drop-shadow-lg"
+                  :class="[
+                    allCalledTurns.length === 1 ? 'text-9xl mb-4' : allCalledTurns.length === 2 ? 'text-7xl mb-2' : 'text-5xl mb-1',
+                    isNewTurn && index === 0 ? 'animate-bounce-slow' : ''
+                  ]"
+                >
+                  {{ turn.code }}
+                </p>
+                <p class="font-semibold text-white/90" :class="allCalledTurns.length === 1 ? 'text-4xl mb-8' : 'text-2xl mb-3'">
+                  {{ turn.patient_name || 'Paciente' }}
+                </p>
 
-              <div class="flex justify-center items-center gap-6">
-                <div class="bg-white/20 backdrop-blur-sm rounded-2xl px-8 py-4 border border-white/30">
-                  <p class="text-white/70 text-sm uppercase tracking-wider font-medium">Consultorio</p>
-                  <p class="font-black text-4xl text-yellow-300 drop-shadow">{{ currentCalledTurn.consultorio_nombre || currentCalledTurn.office_number || '-' }}</p>
-                </div>
-                <div class="bg-white/20 backdrop-blur-sm rounded-2xl px-8 py-4 border border-white/30">
-                  <p class="text-white/70 text-sm uppercase tracking-wider font-medium">Doctor</p>
-                  <p class="font-bold text-xl text-white">{{ currentCalledTurn.doctor_name || '-' }}</p>
+                <div class="flex justify-center items-center gap-4">
+                  <div class="bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30" :class="allCalledTurns.length === 1 ? 'px-8 py-4' : 'px-5 py-2'">
+                    <p class="text-white/70 text-sm uppercase tracking-wider font-medium">Consultorio</p>
+                    <p class="font-black text-yellow-300 drop-shadow" :class="allCalledTurns.length === 1 ? 'text-4xl' : 'text-2xl'">{{ turn.consultorio_nombre || turn.office_number || '-' }}</p>
+                  </div>
+                  <div class="bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30" :class="allCalledTurns.length === 1 ? 'px-8 py-4' : 'px-5 py-2'">
+                    <p class="text-white/70 text-sm uppercase tracking-wider font-medium">Doctor</p>
+                    <p class="font-bold text-white" :class="allCalledTurns.length === 1 ? 'text-xl' : 'text-lg'">{{ turn.doctor_name || '-' }}</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -86,23 +95,6 @@
             </div>
           </div>
 
-          <!-- Lista de turnos llamados (esperando paciente) -->
-          <div v-if="recentCalledTurns.length > 0" class="bg-black/40 backdrop-blur-sm rounded-2xl p-5 shadow-xl border border-white/10">
-            <h3 class="text-xl font-bold mb-4 text-cyan-400 uppercase tracking-wider flex items-center gap-2">
-              <span class="w-3 h-3 bg-cyan-400 rounded-full animate-pulse"></span>
-              Llamando
-            </h3>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div
-                v-for="turn in recentCalledTurns"
-                :key="turn.id"
-                class="bg-gradient-to-br from-cyan-800/50 to-cyan-900/50 rounded-xl p-4 text-center border border-cyan-500/40 hover:border-cyan-400 transition-all animate-pulse"
-              >
-                <p class="text-3xl font-black text-white">{{ turn.code }}</p>
-                <p class="text-sm text-cyan-300 font-medium">{{ turn.consultorio_nombre || turn.office_number || '-' }}</p>
-              </div>
-            </div>
-          </div>
         </div>
 
         <!-- Panel Lateral: Cola de Espera -->
@@ -170,14 +162,12 @@ const isNewTurn = ref(false)
 
 const displayData = computed(() => turnsStore.displayData)
 
-const currentCalledTurn = computed(() => {
-  const called = displayData.value.called || []
-  return called.length > 0 ? called[0] : null
+const allCalledTurns = computed(() => {
+  return displayData.value.called || []
 })
 
-const recentCalledTurns = computed(() => {
-  const called = displayData.value.called || []
-  return called.slice(1, 9) // Los siguientes 8 turnos llamados
+const currentCalledTurn = computed(() => {
+  return allCalledTurns.value.length > 0 ? allCalledTurns.value[0] : null
 })
 
 const inServiceTurns = computed(() => {

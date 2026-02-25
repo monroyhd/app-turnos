@@ -28,11 +28,11 @@ const User = {
   },
 
   async findByUsername(username) {
-    return db(TABLE).where({ username }).first();
+    return db(TABLE).where({ username, is_active: true }).first();
   },
 
   async findByEmail(email) {
-    return db(TABLE).where({ email }).first();
+    return db(TABLE).where({ email, is_active: true }).first();
   },
 
   async create(userData) {

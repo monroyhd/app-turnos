@@ -15,6 +15,7 @@ function generateCodeFromName(name) {
 const serviceSchema = Joi.object({
   name: Joi.string().max(100).required(),
   code: Joi.string().max(20).allow('', null),  // Codigo opcional, si no se proporciona se genera del nombre
+  prefix: Joi.string().max(5).allow('', null),  // Prefijo editable, si no se proporciona se genera del nombre
   description: Joi.string().allow('', null),
   estimated_duration: Joi.number().integer().min(1).max(480),
   tipo: Joi.string().valid('servicio', 'recurso'),
