@@ -23,41 +23,41 @@
     <main class="p-6 overflow-auto" style="height: calc(100vh - 90px);">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
         <!-- Panel Principal: Turno Llamado -->
-        <div class="lg:col-span-2 flex flex-col gap-6">
+        <div class="lg:col-span-2 flex flex-col gap-6 min-h-0">
           <!-- Turnos Llamados -->
-          <div v-if="allCalledTurns.length > 0" class="flex-1 flex flex-col gap-4">
+          <div v-if="allCalledTurns.length > 0" class="flex-1 flex flex-col gap-3 min-h-0 overflow-hidden">
             <div
               v-for="(turn, index) in allCalledTurns"
               :key="turn.id"
-              class="flex-1 rounded-3xl shadow-2xl border-4 transition-all duration-300"
+              class="flex-1 min-h-0 rounded-3xl shadow-2xl border-4 transition-all duration-300 overflow-hidden"
               :class="[
-                allCalledTurns.length === 1 ? 'p-8' : 'p-4',
+                allCalledTurns.length === 1 ? 'p-8' : allCalledTurns.length === 2 ? 'p-4' : 'p-3',
                 isNewTurn && index === 0 ? 'animate-pulse-border bg-gradient-to-br from-emerald-500 via-cyan-500 to-blue-600 border-yellow-400' : 'bg-gradient-to-br from-blue-600 via-cyan-600 to-teal-500 border-cyan-400/50'
               ]"
             >
               <div class="text-center h-full flex flex-col justify-center">
-                <p class="text-white/80 uppercase tracking-widest font-semibold" :class="allCalledTurns.length === 1 ? 'text-2xl mb-2' : 'text-lg mb-1'">TURNO</p>
+                <p class="text-white/80 uppercase tracking-widest font-semibold" :class="allCalledTurns.length === 1 ? 'text-2xl mb-2' : allCalledTurns.length === 2 ? 'text-base mb-1' : 'text-sm mb-0'">TURNO</p>
                 <p
-                  class="font-black text-white drop-shadow-lg"
+                  class="font-black text-white drop-shadow-lg leading-none"
                   :class="[
-                    allCalledTurns.length === 1 ? 'text-9xl mb-4' : allCalledTurns.length === 2 ? 'text-7xl mb-2' : 'text-5xl mb-1',
+                    allCalledTurns.length === 1 ? 'text-9xl mb-4' : allCalledTurns.length === 2 ? 'text-6xl mb-2' : 'text-4xl mb-1',
                     isNewTurn && index === 0 ? 'animate-bounce-slow' : ''
                   ]"
                 >
                   {{ turn.code }}
                 </p>
-                <p class="font-semibold text-white/90" :class="allCalledTurns.length === 1 ? 'text-4xl mb-8' : 'text-2xl mb-3'">
+                <p class="font-semibold text-white/90 truncate" :class="allCalledTurns.length === 1 ? 'text-4xl mb-8' : allCalledTurns.length === 2 ? 'text-xl mb-2' : 'text-lg mb-1'">
                   {{ turn.patient_name || 'Paciente' }}
                 </p>
 
-                <div class="flex justify-center items-center gap-4">
-                  <div class="bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30" :class="allCalledTurns.length === 1 ? 'px-8 py-4' : 'px-5 py-2'">
-                    <p class="text-white/70 text-sm uppercase tracking-wider font-medium">Consultorio</p>
-                    <p class="font-black text-yellow-300 drop-shadow" :class="allCalledTurns.length === 1 ? 'text-4xl' : 'text-2xl'">{{ turn.consultorio_nombre || turn.office_number || '-' }}</p>
+                <div class="flex justify-center items-center" :class="allCalledTurns.length === 1 ? 'gap-4' : 'gap-2'">
+                  <div class="bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30" :class="allCalledTurns.length === 1 ? 'px-8 py-4' : allCalledTurns.length === 2 ? 'px-4 py-2' : 'px-3 py-1'">
+                    <p class="text-white/70 uppercase tracking-wider font-medium" :class="allCalledTurns.length >= 3 ? 'text-xs' : 'text-sm'">Consultorio</p>
+                    <p class="font-black text-yellow-300 drop-shadow" :class="allCalledTurns.length === 1 ? 'text-4xl' : allCalledTurns.length === 2 ? 'text-xl' : 'text-lg'">{{ turn.consultorio_nombre || turn.office_number || '-' }}</p>
                   </div>
-                  <div class="bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30" :class="allCalledTurns.length === 1 ? 'px-8 py-4' : 'px-5 py-2'">
-                    <p class="text-white/70 text-sm uppercase tracking-wider font-medium">Doctor</p>
-                    <p class="font-bold text-white" :class="allCalledTurns.length === 1 ? 'text-xl' : 'text-lg'">{{ turn.doctor_name || '-' }}</p>
+                  <div class="bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30" :class="allCalledTurns.length === 1 ? 'px-8 py-4' : allCalledTurns.length === 2 ? 'px-4 py-2' : 'px-3 py-1'">
+                    <p class="text-white/70 uppercase tracking-wider font-medium" :class="allCalledTurns.length >= 3 ? 'text-xs' : 'text-sm'">Doctor</p>
+                    <p class="font-bold text-white truncate" :class="allCalledTurns.length === 1 ? 'text-xl' : allCalledTurns.length === 2 ? 'text-base' : 'text-sm'">{{ turn.doctor_name || '-' }}</p>
                   </div>
                 </div>
               </div>

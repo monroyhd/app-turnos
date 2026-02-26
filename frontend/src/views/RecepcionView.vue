@@ -33,8 +33,7 @@
             <input
               v-model="newTurn.patient_phone"
               type="tel"
-              required
-              placeholder="Telefono *"
+              placeholder="Telefono"
               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
             >
           </div>
@@ -58,6 +57,17 @@
               <option value="">Doctor (opcional)</option>
               <option v-for="doctor in doctors" :key="doctor.id" :value="doctor.id">
                 {{ doctor.full_name }}
+              </option>
+            </select>
+          </div>
+          <div class="w-[160px]">
+            <select
+              v-model="newTurn.consultorio_id"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+            >
+              <option value="">Consultorio (opcional)</option>
+              <option v-for="c in consultorios" :key="c.id" :value="c.id">
+                {{ c.nombre }}
               </option>
             </select>
           </div>
@@ -229,6 +239,7 @@ const turnsStore = useTurnsStore()
 
 const services = ref([])
 const doctors = ref([])
+const consultorios = ref([])
 const creating = ref(false)
 const stats = ref({})
 const selectedDoctorForTurn = reactive({})
@@ -237,12 +248,12 @@ const newTurn = ref({
   patient_name: '',
   patient_phone: '',
   service_id: '',
-  doctor_id: ''
+  doctor_id: '',
+  consultorio_id: ''
 })
 
 const canCreate = computed(() => {
   return newTurn.value.patient_name.trim() &&
-         newTurn.value.patient_phone.trim() &&
          newTurn.value.service_id
 })
 
@@ -280,14 +291,16 @@ onUnmounted(() => {
 async function loadData() {
   await turnsStore.fetchTurns({ today: true })
 
-  const [servicesRes, doctorsRes, statsRes] = await Promise.all([
+  const [servicesRes, doctorsRes, consultoriosRes, statsRes] = await Promise.all([
     api.get('/services?is_active=true&tipo=servicio'),
     api.get('/doctors?is_active=true'),
+    api.get('/recursos?tipo=CONSULTORIO&is_active=true'),
     api.get('/turns/stats')
   ])
 
   services.value = servicesRes.data.data
   doctors.value = doctorsRes.data.data
+  consultorios.value = consultoriosRes.data.data
   stats.value = statsRes.data.data || {}
 }
 
@@ -304,16 +317,17 @@ async function createTurn() {
   creating.value = true
   const turnData = {
     patient_name: newTurn.value.patient_name,
-    patient_phone: newTurn.value.patient_phone,
+    patient_phone: newTurn.value.patient_phone || null,
     service_id: newTurn.value.service_id,
     doctor_id: newTurn.value.doctor_id || null,
+    consultorio_id: newTurn.value.consultorio_id || null,
     patient_id: null
   }
 
   const result = await turnsStore.createTurn(turnData)
 
   if (result.success) {
-    newTurn.value = { patient_name: '', patient_phone: '', service_id: '', doctor_id: '' }
+    newTurn.value = { patient_name: '', patient_phone: '', service_id: '', doctor_id: '', consultorio_id: '' }
     await loadStats()
   } else {
     alert(result.message)

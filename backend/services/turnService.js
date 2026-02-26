@@ -14,11 +14,6 @@ const TurnService = {
         error.statusCode = 400;
         throw error;
       }
-      if (!data.patient_phone || !data.patient_phone.trim()) {
-        const error = new Error('El teléfono del paciente es obligatorio');
-        error.statusCode = 400;
-        throw error;
-      }
     }
 
     // Obtener servicio para el prefijo

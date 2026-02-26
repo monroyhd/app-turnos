@@ -9,6 +9,12 @@ const ACTIVE_STATUSES = ['CREATED', 'WAITING', 'CALLED', 'IN_SERVICE'];
 async function generateTurnCode(serviceId, servicePrefix = 'T') {
   const today = new Date().toISOString().split('T')[0];
 
+  // Cancelar turnos activos de dias anteriores (no deberian existir)
+  await db('turns')
+    .whereIn('status', ACTIVE_STATUSES)
+    .whereRaw('DATE(created_at) < ?', [today])
+    .update({ status: 'CANCELLED' });
+
   // Contar TODOS los turnos del dia para este servicio (secuencia del dia)
   const totalToday = await db('turns')
     .whereRaw('DATE(created_at) = ?', [today])
@@ -18,11 +24,10 @@ async function generateTurnCode(serviceId, servicePrefix = 'T') {
 
   const nextNumber = (parseInt(totalToday.total) || 0) + 1;
 
-  // Verificar que el codigo no este en uso por un turno activo
+  // Verificar que el codigo no este en uso por un turno activo (sin filtro de fecha, igual que el indice unico)
   let code = `${servicePrefix}${String(nextNumber).padStart(3, '0')}`;
 
   const conflict = await db('turns')
-    .whereRaw('DATE(created_at) = ?', [today])
     .where('code', code)
     .whereIn('status', ACTIVE_STATUSES)
     .first();
@@ -30,8 +35,6 @@ async function generateTurnCode(serviceId, servicePrefix = 'T') {
   // Si hay conflicto, buscar el primer numero libre entre los activos
   if (conflict) {
     const activeTurns = await db('turns')
-      .whereRaw('DATE(created_at) = ?', [today])
-      .where('service_id', serviceId)
       .whereIn('status', ACTIVE_STATUSES)
       .select('code');
 
