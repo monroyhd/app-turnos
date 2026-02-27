@@ -200,6 +200,11 @@ const doctorController = {
         await User.update(existing.user_id, { username: normalizedUsername });
       }
 
+      // Sincronizar full_name del usuario si cambia el nombre del doctor
+      if (value.full_name && existing.user_id) {
+        await User.update(existing.user_id, { full_name: value.full_name });
+      }
+
       // Remover username del value antes de actualizar doctor
       delete value.username;
 
