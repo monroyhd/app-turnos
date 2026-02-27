@@ -46,7 +46,7 @@ const Doctor = {
   },
 
   async findByUserId(userId) {
-    return db(TABLE).where({ user_id: userId }).first();
+    return db(TABLE).where({ user_id: userId, is_active: true }).first();
   },
 
   async findByEmployeeNumber(employeeNumber) {

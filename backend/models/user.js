@@ -35,6 +35,14 @@ const User = {
     return db(TABLE).where({ email, is_active: true }).first();
   },
 
+  async findInactiveByEmail(email) {
+    return db(TABLE).where({ email, is_active: false }).first();
+  },
+
+  async findInactiveByUsername(username) {
+    return db(TABLE).where({ username, is_active: false }).first();
+  },
+
   async create(userData) {
     const saltRounds = 10;
     const password_hash = await bcrypt.hash(userData.password, saltRounds);

@@ -114,12 +114,29 @@ const doctorController = {
       const email = value.email;
       const password = 'medico123';
 
-      // Verificar que el email no exista
+      // Verificar que el email no exista entre usuarios activos
       const existingEmail = await User.findByEmail(email);
       if (existingEmail) {
         return res.status(409).json({
           success: false,
           message: `Ya existe un usuario con el email: ${email}`
+        });
+      }
+
+      // Liberar email/username de usuarios inactivos que bloquean el UNIQUE constraint
+      const timestamp = Date.now();
+
+      const inactiveByEmail = await User.findInactiveByEmail(email);
+      if (inactiveByEmail) {
+        await User.update(inactiveByEmail.id, {
+          email: `deleted_${timestamp}_${inactiveByEmail.id}@deleted.local`
+        });
+      }
+
+      const inactiveByUsername = await User.findInactiveByUsername(username);
+      if (inactiveByUsername) {
+        await User.update(inactiveByUsername.id, {
+          username: `deleted_${timestamp}_${inactiveByUsername.id}`
         });
       }
 
