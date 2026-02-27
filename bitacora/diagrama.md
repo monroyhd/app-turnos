@@ -815,4 +815,117 @@ sequenceDiagram
 
 ---
 
-**Ultima actualizacion:** 2026-02-05 (v15 - Pantalla minimalista de recepcion /recepcion)
+## 15. Flujo de Generacion de Codigo de Turno (con proteccion de timezone)
+
+```mermaid
+flowchart TD
+    Start["createTurn() llamado"] --> GenCode["generateTurnCode(serviceId, prefix)"]
+    GenCode --> Cancel["Cancelar turnos activos de dias anteriores<br/>WHERE DATE(created_at) < CURRENT_DATE<br/>⚠️ Usa CURRENT_DATE de PostgreSQL, NO Date() de Node"]
+    Cancel --> Count["Contar turnos del dia para este servicio<br/>WHERE DATE(created_at) = CURRENT_DATE<br/>AND service_id = ?"]
+    Count --> Next["nextNumber = total + 1<br/>code = prefix + padStart(3, '0')"]
+    Next --> Check{"¿Codigo en uso<br/>por turno activo?"}
+    Check -->|No| Return["Retornar codigo<br/>ej: C003"]
+    Check -->|Si| FindFree["Buscar primer numero libre<br/>entre turnos activos"]
+    FindFree --> Return
+
+    style Cancel fill:#fff3cd,stroke:#ffc107
+    style Count fill:#fff3cd,stroke:#ffc107
+```
+
+### Problema de Timezone Resuelto
+
+```mermaid
+flowchart LR
+    subgraph Antes["❌ ANTES (Bug)"]
+        Node1["Node.js: new Date()<br/>UTC: Feb 27 01:00"]
+        PG1["PostgreSQL: created_at<br/>Mountain: Feb 26 18:00"]
+        Result1["DATE(created_at) < 'Feb 27'<br/>= TRUE → ¡CANCELA todo!"]
+        Node1 --> Result1
+        PG1 --> Result1
+    end
+
+    subgraph Despues["✅ DESPUES (Fix)"]
+        PG2["PostgreSQL: CURRENT_DATE<br/>Mountain: Feb 26"]
+        PG3["PostgreSQL: DATE(created_at)<br/>Mountain: Feb 26"]
+        Result2["DATE(created_at) < CURRENT_DATE<br/>= FALSE → No cancela"]
+        PG2 --> Result2
+        PG3 --> Result2
+    end
+
+    style Antes fill:#fee2e2,stroke:#dc2626
+    style Despues fill:#dcfce7,stroke:#16a34a
+```
+
+## 16. Flujo de Borrado y Re-creacion de Medicos
+
+```mermaid
+sequenceDiagram
+    participant A as Admin
+    participant API as Backend API
+    participant DB as PostgreSQL
+
+    Note over A,DB: 1. Borrar Medico
+    A->>API: DELETE /api/doctors/:id
+    API->>DB: UPDATE doctors SET is_active = false
+    API->>DB: UPDATE users SET is_active = false,<br/>username = 'deleted_ts_id',<br/>email = 'deleted_ts_id@deleted.local'
+    Note over DB: Libera username/email para futuro uso
+    API-->>A: 200 Medico desactivado
+
+    Note over A,DB: 2. Re-crear Medico (mismo email)
+    A->>API: POST /api/doctors
+    API->>API: generateUniqueUsername("Juan Perez") → "j.perez"
+    API->>DB: Verificar email activo (findByEmail)
+    alt Email existe en usuario activo
+        API-->>A: 409 Email duplicado
+    end
+    API->>DB: Buscar usuario inactivo con mismo email
+    alt Existe usuario inactivo con email
+        API->>DB: UPDATE email → deleted_ts_id@deleted.local
+        Note over DB: Libera constraint UNIQUE
+    end
+    API->>DB: Buscar usuario inactivo con mismo username
+    alt Existe usuario inactivo con username
+        API->>DB: UPDATE username → deleted_ts_id
+    end
+    API->>DB: INSERT users (nuevo usuario activo)
+    API->>DB: INSERT doctors (user_id vinculado)
+    API-->>A: 201 Medico creado + credenciales
+```
+
+## 17. Sincronizacion Doctor ↔ Usuario
+
+```mermaid
+flowchart TD
+    subgraph Update["Al actualizar doctor (PUT /api/doctors/:id)"]
+        U1["Recibir datos: full_name, specialty, etc."]
+        U2{"¿Cambio full_name?"}
+        U2 -->|Si| U3["User.update(user_id, {full_name})"]
+        U2 -->|No| U4["Continuar"]
+        U3 --> U4
+        U4 --> U5{"¿Cambio username?"}
+        U5 -->|Si| U6["Verificar disponibilidad"]
+        U6 --> U7["User.update(user_id, {username})"]
+        U5 -->|No| U8["Doctor.update(id, data)"]
+        U7 --> U8
+    end
+
+    subgraph Scripts["Scripts de mantenimiento"]
+        S1["sync-doctor-names.js<br/>Corrige: doctors.full_name ≠ users.full_name"]
+        S2["cleanup-inactive-users.js<br/>Renombra: usuarios inactivos sin prefijo 'deleted_'"]
+        S3["sync-sequences.js<br/>Ajusta: secuencias de IDs de PostgreSQL"]
+    end
+
+    style Scripts fill:#f0f9ff,stroke:#0284c7
+```
+
+### Scripts de Mantenimiento
+
+| Script | Proposito | Cuando ejecutar |
+|--------|-----------|-----------------|
+| `sync-sequences.js` | Ajusta secuencias de IDs al max actual | Despues de inserts manuales o seeds |
+| `cleanup-inactive-users.js` | Libera email/username de usuarios borrados | Una vez, para limpiar datos anteriores al fix |
+| `sync-doctor-names.js` | Sincroniza full_name entre doctors y users | Una vez, para corregir desfases existentes |
+
+---
+
+**Ultima actualizacion:** 2026-02-26 (v16 - Fix timezone turnos, doctor desfasado, re-creacion medicos)

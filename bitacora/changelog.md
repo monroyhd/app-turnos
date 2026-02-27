@@ -1,5 +1,62 @@
 # Changelog - Sistema de Turnos Hospitalarios
 
+## [2026-02-26] - Fix: Timezone turnos + Doctor desfasado + Re-creacion medicos
+
+### Problemas Corregidos
+
+#### 1. Turnos se sobreescriben en produccion (BUG CRITICO)
+- **Causa raiz**: Desfase de timezone entre Node.js (UTC) y PostgreSQL (`US/Mountain`, UTC-7)
+- **Efecto**: `generateTurnCode()` usaba `new Date().toISOString()` (fecha UTC) para comparar contra `DATE(created_at)` de PostgreSQL (fecha local Mountain). Cuando era despues de las 5pm hora local (midnight UTC), Node pensaba que era "mañana" y:
+  1. **Cancelaba todos los turnos activos del dia** pensando que eran de "ayer"
+  2. **Siempre generaba codigo X001** porque contaba 0 turnos para "hoy" (fecha UTC)
+- **Solucion**: Reemplazar `new Date().toISOString()` con `CURRENT_DATE` de PostgreSQL en las queries de `turnCodeGenerator.js`
+- **Archivo**: `backend/utils/turnCodeGenerator.js`
+
+#### 2. Doctor desfasado al hacer login
+- **Causa**: `Doctor.findByUserId()` no filtraba por `is_active: true`. Si existia un doctor inactivo (borrado) con el mismo `user_id`, el `.first()` podia devolver el incorrecto.
+- **Solucion**: Agregar `is_active: true` al filtro de `findByUserId()`
+- **Archivo**: `backend/models/doctor.js` linea 49
+
+#### 3. Nombre de doctor no coincide con nombre de usuario
+- **Causa**: Al borrar y re-crear medicos, el registro `users.full_name` conservaba el nombre anterior (ej: user "j.quinonez" tenia `full_name: "armando ruiz"` pero el doctor vinculado era "Juan Carlos Quinonez")
+- **Solucion**:
+  - Script `sync-doctor-names.js` para corregir desfases existentes
+  - Al actualizar un doctor, sincronizar `full_name` del usuario automaticamente
+- **Archivos**: `backend/database/sync-doctor-names.js` (nuevo), `backend/controllers/doctorController.js`
+
+#### 4. "Recurso duplicado" al re-crear medico borrado
+- **Causa**: Medicos borrados ANTES del fix de rename tenian usuarios inactivos con email/username original. El constraint UNIQUE global en la BD bloqueaba la re-creacion.
+- **Solucion**:
+  - Al crear medico, buscar usuarios inactivos con mismo email/username y renombrarlos (`deleted_<timestamp>_<id>`)
+  - Script `cleanup-inactive-users.js` para limpiar usuarios borrados antes del fix
+- **Archivos**: `backend/controllers/doctorController.js`, `backend/models/user.js` (nuevos metodos `findInactiveByEmail`, `findInactiveByUsername`), `backend/database/cleanup-inactive-users.js` (nuevo)
+
+### Archivos Modificados
+| Archivo | Cambio |
+|---------|--------|
+| `backend/utils/turnCodeGenerator.js` | Usar `CURRENT_DATE` de PG en vez de fecha UTC de Node |
+| `backend/models/doctor.js` | `findByUserId` filtra por `is_active: true` |
+| `backend/models/user.js` | Nuevos metodos `findInactiveByEmail()`, `findInactiveByUsername()` |
+| `backend/controllers/doctorController.js` | Liberar email/username inactivos en `create`, sincronizar `full_name` en `update` |
+| `backend/database/cleanup-inactive-users.js` | **Nuevo** - Script para limpiar usuarios inactivos |
+| `backend/database/sync-doctor-names.js` | **Nuevo** - Script para sincronizar nombres doctor-usuario |
+
+### Scripts de Produccion
+```bash
+git pull
+cd backend
+node database/sync-sequences.js        # Sincronizar secuencias de IDs
+node database/cleanup-inactive-users.js # Liberar email/username de usuarios borrados
+node database/sync-doctor-names.js      # Sincronizar full_name entre doctors y users
+pm2 restart app-turnos                  # Reiniciar backend
+```
+
+### Leccion Aprendida
+> **NUNCA usar `new Date()` de Node.js para comparar contra fechas de PostgreSQL.**
+> Siempre usar `CURRENT_DATE` o `CURRENT_TIMESTAMP` directamente en las queries SQL para evitar desfases de timezone entre la aplicacion y la base de datos.
+
+---
+
 ## [2026-01-31] - Fix: Ordenamiento Chrome + WebSocket Safari
 
 ### Problemas Corregidos
