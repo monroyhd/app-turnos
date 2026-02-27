@@ -7,17 +7,18 @@ const db = knex(dbConfig[process.env.NODE_ENV || 'development']);
 const ACTIVE_STATUSES = ['CREATED', 'WAITING', 'CALLED', 'IN_SERVICE'];
 
 async function generateTurnCode(serviceId, servicePrefix = 'T') {
-  const today = new Date().toISOString().split('T')[0];
+  // Usar CURRENT_DATE de PostgreSQL para evitar desfase de timezone con Node.js
+  // Node usa UTC, pero PostgreSQL puede tener otra zona horaria (ej. US/Mountain)
 
   // Cancelar turnos activos de dias anteriores (no deberian existir)
   await db('turns')
     .whereIn('status', ACTIVE_STATUSES)
-    .whereRaw('DATE(created_at) < ?', [today])
+    .whereRaw('DATE(created_at) < CURRENT_DATE')
     .update({ status: 'CANCELLED' });
 
   // Contar TODOS los turnos del dia para este servicio (secuencia del dia)
   const totalToday = await db('turns')
-    .whereRaw('DATE(created_at) = ?', [today])
+    .whereRaw('DATE(created_at) = CURRENT_DATE')
     .where('service_id', serviceId)
     .count('id as total')
     .first();
