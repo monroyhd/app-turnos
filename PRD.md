@@ -63,6 +63,7 @@ El sistema estará pensado para que **una IA o un equipo técnico** pueda desarr
 ### Capturista
 - Registra pacientes
 - Crea turnos (nombre y teléfono obligatorios, paciente registrado opcional)
+- Imprime ticket de turno automaticamente al crear (impresora termica 58mm/80mm)
 - Busca pacientes por nombre o teléfono
 - Cancela turnos en cualquier estado activo
 - Consulta colas
@@ -145,6 +146,7 @@ Esto permite funcionar con IP dinámica sin configuración adicional.
 
 ### /recepcion - Pantalla Minimalista de Recepcion
 - Formulario inline para crear turnos (nombre, telefono, servicio, doctor opcional)
+- Impresion automatica de ticket al crear turno (impresora termica)
 - Lista de turnos activos (WAITING, CALLED, IN_SERVICE)
 - Acciones rapidas por estado:
   - WAITING: [Llamar] [Cancelar]

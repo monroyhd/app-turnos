@@ -13,7 +13,17 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Formulario de nuevo turno -->
       <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-lg font-semibold mb-4">Crear Nuevo Turno</h2>
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold">Crear Nuevo Turno</h2>
+          <label class="flex items-center cursor-pointer text-sm text-gray-600">
+            <span class="mr-2">Imprimir ticket</span>
+            <div class="relative">
+              <input type="checkbox" v-model="printEnabled" class="sr-only peer">
+              <div class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:bg-green-500 transition-colors"></div>
+              <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow peer-checked:translate-x-4 transition-transform"></div>
+            </div>
+          </label>
+        </div>
 
         <form @submit.prevent="createTurn" class="space-y-4">
           <!-- Nombre del paciente (obligatorio) -->
@@ -180,17 +190,22 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useTurnsStore } from '../stores/turns'
+import { useSettingsStore } from '../stores/settings'
 import api from '../services/api'
 import mqttClient from '../services/mqttClient'
+import { printTicket, isPrintEnabled, setPrintEnabled } from '../utils/printTicket'
 
 const turnsStore = useTurnsStore()
+const settingsStore = useSettingsStore()
 
 const services = ref([])
 const doctors = ref([])
 const consultorios = ref([])
 const creating = ref(false)
+const printEnabled = ref(isPrintEnabled())
+watch(printEnabled, (val) => setPrintEnabled(val))
 
 const newTurn = ref({
   patient_name: '',
@@ -252,6 +267,7 @@ async function createTurn() {
   const result = await turnsStore.createTurn(turnData)
 
   if (result.success) {
+    if (printEnabled.value) printTicket(result.data, settingsStore.hospitalName)
     newTurn.value = { patient_name: '', patient_phone: '', service_id: '', doctor_id: '', consultorio_id: null, priority: 0, notes: '' }
   } else {
     alert(result.message)

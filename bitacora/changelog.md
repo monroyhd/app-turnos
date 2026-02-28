@@ -1,5 +1,21 @@
 # Changelog - Sistema de Turnos Hospitalarios
 
+## [2026-02-27] - Feature: Impresion de tickets de turno en impresora termica
+
+### Funcionalidad Agregada
+
+#### Impresion automatica de ticket al crear turno
+- **Descripcion**: Al crear un turno desde CapturistaView o RecepcionView, se abre automaticamente una ventana de impresion con un ticket formateado para impresora termica (58mm/80mm)
+- **Contenido del ticket**: Nombre del hospital, codigo del turno (grande), nombre del paciente, servicio, fecha y hora, mensaje de cierre
+- **Implementacion**: Funcion `printTicket()` usa `window.print()` con CSS optimizado para papel termico (`@page { size: 58mm auto }`)
+- **Archivos**:
+  - `frontend/src/utils/printTicket.js` (nuevo) - Funcion utilitaria de impresion
+  - `frontend/src/views/CapturistaView.vue` - Llamada a printTicket despues de crear turno
+  - `frontend/src/views/RecepcionView.vue` - Llamada a printTicket despues de crear turno
+- **Requisito**: La impresora termica debe estar configurada como impresora predeterminada del sistema. Los popups deben estar permitidos en el navegador.
+
+---
+
 ## [2026-02-26] - Fix: Timezone turnos + Doctor desfasado + Re-creacion medicos
 
 ### Problemas Corregidos

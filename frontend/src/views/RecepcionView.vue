@@ -18,7 +18,17 @@
     <main class="max-w-7xl mx-auto px-4 py-4">
       <!-- Formulario de Nuevo Turno (inline) -->
       <div class="bg-white rounded-lg shadow p-4 mb-4">
-        <h2 class="text-sm font-semibold text-gray-700 mb-3">NUEVO TURNO</h2>
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="text-sm font-semibold text-gray-700">NUEVO TURNO</h2>
+          <label class="flex items-center cursor-pointer text-sm text-gray-600">
+            <div class="relative">
+              <input type="checkbox" v-model="printEnabled" class="sr-only peer">
+              <div class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:bg-green-500 transition-colors"></div>
+              <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow peer-checked:translate-x-4 transition-transform"></div>
+            </div>
+            <span class="ml-2">Imprimir</span>
+          </label>
+        </div>
         <form @submit.prevent="createTurn" class="flex flex-wrap gap-2 items-end">
           <div class="flex-1 min-w-[150px]">
             <input
@@ -226,21 +236,26 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, reactive } from 'vue'
+import { ref, computed, onMounted, onUnmounted, reactive, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useTurnsStore } from '../stores/turns'
+import { useSettingsStore } from '../stores/settings'
 import api from '../services/api'
 import mqttClient from '../services/mqttClient'
+import { printTicket, isPrintEnabled, setPrintEnabled } from '../utils/printTicket'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const turnsStore = useTurnsStore()
+const settingsStore = useSettingsStore()
 
 const services = ref([])
 const doctors = ref([])
 const consultorios = ref([])
 const creating = ref(false)
+const printEnabled = ref(isPrintEnabled())
+watch(printEnabled, (val) => setPrintEnabled(val))
 const stats = ref({})
 const selectedDoctorForTurn = reactive({})
 
@@ -327,6 +342,7 @@ async function createTurn() {
   const result = await turnsStore.createTurn(turnData)
 
   if (result.success) {
+    if (printEnabled.value) printTicket(result.data, settingsStore.hospitalName)
     newTurn.value = { patient_name: '', patient_phone: '', service_id: '', doctor_id: '', consultorio_id: '' }
     await loadStats()
   } else {

@@ -928,4 +928,35 @@ flowchart TD
 
 ---
 
-**Ultima actualizacion:** 2026-02-26 (v16 - Fix timezone turnos, doctor desfasado, re-creacion medicos)
+## 18. Impresion de Ticket de Turno
+
+```mermaid
+sequenceDiagram
+    participant C as Capturista/Recepcion
+    participant FE as Frontend (Vue)
+    participant API as Backend API
+    participant Print as Ventana Impresion
+
+    C->>FE: Crear turno (formulario)
+    FE->>API: POST /api/turns
+    API-->>FE: {success: true, data: turn}
+    FE->>FE: printTicket(turn, hospitalName)
+    FE->>Print: window.open() con HTML ticket
+    Print->>Print: window.print()
+    Note over Print: Ticket 58mm:<br/>Hospital Name<br/>--- --- ---<br/>Su turno<br/>A001<br/>--- --- ---<br/>Paciente: Juan Perez<br/>Servicio: Consulta<br/>27/02/2026 - 10:30<br/>--- --- ---<br/>Gracias por su visita
+    Print->>Print: Cerrar ventana (auto)
+```
+
+### Configuracion de Impresora
+| Aspecto | Detalle |
+|---------|---------|
+| **Tipo** | Impresora termica ESC/POS generica |
+| **Ancho papel** | 58mm u 80mm |
+| **Conexion** | USB al PC del capturista |
+| **Requisito** | Configurar como impresora predeterminada del sistema |
+| **Navegador** | Permitir popups para el sitio |
+| **Fuente datos** | `settingsStore.hospitalName` para nombre hospital |
+
+---
+
+**Ultima actualizacion:** 2026-02-27 (v17 - Impresion de tickets de turno en impresora termica)

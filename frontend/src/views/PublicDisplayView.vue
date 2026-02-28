@@ -35,30 +35,35 @@
                 isNewTurn && index === 0 ? 'animate-pulse-border bg-gradient-to-br from-emerald-500 via-cyan-500 to-blue-600 border-yellow-400' : 'bg-gradient-to-br from-blue-600 via-cyan-600 to-teal-500 border-cyan-400/50'
               ]"
             >
-              <div class="text-center h-full flex flex-col justify-center">
-                <p class="text-white/80 uppercase tracking-widest font-semibold" :class="allCalledTurns.length === 1 ? 'text-2xl mb-2' : allCalledTurns.length === 2 ? 'text-base mb-1' : 'text-sm mb-0'">TURNO</p>
-                <p
-                  class="font-black text-white drop-shadow-lg leading-none"
-                  :class="[
-                    allCalledTurns.length === 1 ? 'text-9xl mb-4' : allCalledTurns.length === 2 ? 'text-6xl mb-2' : 'text-4xl mb-1',
-                    isNewTurn && index === 0 ? 'animate-bounce-slow' : ''
-                  ]"
+              <div class="h-full flex items-center justify-center">
+                <div
+                  class="flex items-center justify-center gap-6 w-full"
+                  :class="isNewTurn && index === 0 ? 'animate-flash' : ''"
                 >
-                  {{ turn.code }}
-                </p>
-                <p class="font-semibold text-white/90 truncate" :class="allCalledTurns.length === 1 ? 'text-4xl mb-8' : allCalledTurns.length === 2 ? 'text-xl mb-2' : 'text-lg mb-1'">
-                  {{ turn.patient_name || 'Paciente' }}
-                </p>
-
-                <div class="flex justify-center items-center" :class="allCalledTurns.length === 1 ? 'gap-4' : 'gap-2'">
-                  <div class="bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30" :class="allCalledTurns.length === 1 ? 'px-8 py-4' : allCalledTurns.length === 2 ? 'px-4 py-2' : 'px-3 py-1'">
-                    <p class="text-white/70 uppercase tracking-wider font-medium" :class="allCalledTurns.length >= 3 ? 'text-xs' : 'text-sm'">Consultorio</p>
-                    <p class="font-black text-yellow-300 drop-shadow" :class="allCalledTurns.length === 1 ? 'text-4xl' : allCalledTurns.length === 2 ? 'text-xl' : 'text-lg'">{{ turn.consultorio_nombre || turn.office_number || '-' }}</p>
-                  </div>
-                  <div class="bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30" :class="allCalledTurns.length === 1 ? 'px-8 py-4' : allCalledTurns.length === 2 ? 'px-4 py-2' : 'px-3 py-1'">
-                    <p class="text-white/70 uppercase tracking-wider font-medium" :class="allCalledTurns.length >= 3 ? 'text-xs' : 'text-sm'">Doctor</p>
-                    <p class="font-bold text-white truncate" :class="allCalledTurns.length === 1 ? 'text-xl' : allCalledTurns.length === 2 ? 'text-base' : 'text-sm'">{{ turn.doctor_name || '-' }}</p>
-                  </div>
+                  <span
+                    class="font-black text-white drop-shadow-lg leading-none"
+                    :class="allCalledTurns.length === 1 ? 'text-7xl' : allCalledTurns.length === 2 ? 'text-5xl' : 'text-3xl'"
+                  >
+                    {{ turn.code }}
+                  </span>
+                  <span
+                    class="font-black text-yellow-300 drop-shadow"
+                    :class="allCalledTurns.length === 1 ? 'text-3xl' : allCalledTurns.length === 2 ? 'text-xl' : 'text-lg'"
+                  >
+                    {{ turn.consultorio_nombre || turn.office_number || '-' }}
+                  </span>
+                  <span
+                    class="font-bold text-white"
+                    :class="allCalledTurns.length === 1 ? 'text-3xl' : allCalledTurns.length === 2 ? 'text-xl' : 'text-lg'"
+                  >
+                    {{ turn.doctor_name || '-' }}
+                  </span>
+                  <span
+                    class="font-semibold text-white/80 truncate"
+                    :class="allCalledTurns.length === 1 ? 'text-3xl' : allCalledTurns.length === 2 ? 'text-xl' : 'text-lg'"
+                  >
+                    {{ turn.patient_name || 'Paciente' }}
+                  </span>
                 </div>
               </div>
             </div>
@@ -294,5 +299,14 @@ onUnmounted(() => {
 
 .animate-bounce-slow {
   animation: bounce-slow 0.5s ease-in-out infinite;
+}
+
+@keyframes flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.animate-flash {
+  animation: flash 1s ease-in-out infinite;
 }
 </style>
