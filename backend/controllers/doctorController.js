@@ -1,5 +1,6 @@
 const Doctor = require('../models/doctor');
 const User = require('../models/user');
+const Recurso = require('../models/recurso');
 const Joi = require('joi');
 
 // Funcion para generar username: primera letra + punto + apellido
@@ -59,6 +60,62 @@ const doctorUpdateSchema = Joi.object({
 });
 
 const doctorController = {
+  async getMe(req, res, next) {
+    try {
+      const doctor = await Doctor.findFullByUserId(req.user.id);
+
+      if (!doctor) {
+        return res.status(404).json({
+          success: false,
+          message: 'No tiene perfil de medico asociado'
+        });
+      }
+
+      res.json({
+        success: true,
+        data: doctor
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async updateMyConsultorio(req, res, next) {
+    try {
+      const doctor = await Doctor.findByUserId(req.user.id);
+
+      if (!doctor) {
+        return res.status(404).json({
+          success: false,
+          message: 'No tiene perfil de medico asociado'
+        });
+      }
+
+      const { consultorio_id } = req.body;
+
+      // Permitir null para deseleccionar consultorio
+      if (consultorio_id !== null && consultorio_id !== undefined) {
+        const recurso = await Recurso.findById(consultorio_id);
+        if (!recurso || recurso.tipo !== 'CONSULTORIO' || !recurso.is_active) {
+          return res.status(400).json({
+            success: false,
+            message: 'Consultorio no valido o inactivo'
+          });
+        }
+      }
+
+      const updated = await Doctor.updateConsultorio(doctor.id, consultorio_id || null);
+
+      res.json({
+        success: true,
+        message: 'Consultorio actualizado',
+        data: updated
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
   async list(req, res, next) {
     try {
       const filters = {

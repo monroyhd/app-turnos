@@ -82,6 +82,7 @@ class MqttService {
         patient_name: turn.patient_name,
         doctor_name: turn.doctor_name,
         office_number: turn.office_number,
+        consultorio_nombre: turn.consultorio_nombre,
         service_name: turn.service_name,
         called_at: turn.called_at
       },
@@ -100,6 +101,7 @@ class MqttService {
         patient_name: turn.patient_name,
         doctor_name: turn.doctor_name,
         office_number: turn.office_number,
+        consultorio_nombre: turn.consultorio_nombre,
         service_name: turn.service_name
       },
       timestamp: new Date().toISOString()

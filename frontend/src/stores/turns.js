@@ -4,6 +4,7 @@ import api from '../services/api'
 
 export const useTurnsStore = defineStore('turns', () => {
   const turns = ref([])
+  const unassignedTurns = ref([])
   const queue = ref([])
   const displayData = ref({ called: [], inService: [], waiting: [], stats: {} })
   const loading = ref(false)
@@ -64,6 +65,17 @@ export const useTurnsStore = defineStore('turns', () => {
       }
     } catch (err) {
       console.error('Error cargando datos de display:', err)
+    }
+  }
+
+  async function fetchUnassignedTurns() {
+    try {
+      const response = await api.get('/turns/unassigned-for-me')
+      if (response.data.success) {
+        unassignedTurns.value = response.data.data
+      }
+    } catch (err) {
+      console.error('Error cargando turnos sin asignar:', err)
     }
   }
 
@@ -144,6 +156,7 @@ export const useTurnsStore = defineStore('turns', () => {
 
   return {
     turns,
+    unassignedTurns,
     queue,
     displayData,
     loading,
@@ -155,6 +168,7 @@ export const useTurnsStore = defineStore('turns', () => {
     fetchQueue,
     fetchDisplayData,
     fetchMyTurns,
+    fetchUnassignedTurns,
     createTurn,
     updateTurnStatus,
     handleMqttMessage

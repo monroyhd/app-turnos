@@ -1,5 +1,45 @@
 # Changelog - Sistema de Turnos Hospitalarios
 
+## [2026-03-03] - Fix: Turnos sin doctor no visibles para doctores de Consulta General
+
+### Problema
+Los turnos creados sin doctor asignado (service_id=7 "Consulta General") no aparecian en la seccion "Turnos Disponibles" del panel de ningun doctor. La causa raiz era que los doctores activos (id 13, 15, 16) no tenian registros en `doctor_services`, por lo que `getUnassignedForDoctor()` retornaba array vacio.
+
+### Solucion
+
+#### 1. Migracion de datos (018)
+- `backend/database/migrations/018_assign_consulta_general_to_active_doctors.js` - Asigna automaticamente "Consulta General" a doctores activos sin servicios asignados
+
+#### 2. Aviso preventivo en DoctorView
+- `frontend/src/views/DoctorView.vue` - Banner de advertencia cuando el doctor no tiene servicios asignados ("Contacte al administrador")
+
+#### 3. Selector de servicios en AdminView
+- `frontend/src/views/AdminView.vue` - Agregado multi-select de servicios al formulario de crear/editar doctor con advertencia si no se selecciona ningun servicio
+
+---
+
+## [2026-03-03] - Feature: Selector de Consultorio para Medicos y Recepcion
+
+### Funcionalidad Agregada
+
+#### Selector de consultorio persistente para medicos
+- **Descripcion**: Los medicos pueden seleccionar su consultorio actual desde su panel. El consultorio se persiste en la tabla `doctors` y se aplica automaticamente al llamar turnos.
+- **Flujo Doctor**: Selecciona consultorio -> se guarda via PUT /doctors/my-consultorio -> al llamar turno se envia el consultorio_id -> turno se actualiza -> pantalla publica muestra consultorio correcto via MQTT
+- **Flujo Recepcion**: Al llamar un turno, puede seleccionar consultorio junto al doctor -> se envia en PUT /turns/:id/call
+
+### Archivos Modificados/Creados
+- `backend/database/migrations/017_add_consultorio_to_doctors.js` (nuevo) - Agrega consultorio_id FK a doctors
+- `backend/models/doctor.js` - findById con join recursos, nuevo findFullByUserId, nuevo updateConsultorio
+- `backend/controllers/doctorController.js` - Nuevos handlers getMe y updateMyConsultorio
+- `backend/routes/doctors.js` - Nuevas rutas GET /me y PUT /my-consultorio
+- `backend/controllers/turnController.js` - Handler call envia consultorio_id
+- `backend/services/turnService.js` - callTurn acepta consultorioId y actualiza turno
+- `backend/services/mqttService.js` - Agrega consultorio_nombre a payloads MQTT
+- `frontend/src/views/DoctorView.vue` - Barra selector de consultorio, carga perfil y consultorios
+- `frontend/src/views/RecepcionView.vue` - Selector consultorio al llamar turnos
+
+---
+
 ## [2026-02-27] - Feature: Impresion de tickets de turno en impresora termica
 
 ### Funcionalidad Agregada

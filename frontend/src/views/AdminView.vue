@@ -369,6 +369,16 @@
             <label class="block text-sm font-medium text-gray-700">Telefono</label>
             <input v-model="doctorForm.phone" type="tel" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="555-123-4567">
           </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Servicios *</label>
+            <div class="mt-1 max-h-40 overflow-y-auto border border-gray-300 rounded-md p-2 space-y-1">
+              <label v-for="service in services" :key="service.id" class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded">
+                <input type="checkbox" :value="service.id" v-model="doctorForm.service_ids" class="rounded text-primary-600">
+                <span class="text-sm">{{ service.name }}</span>
+              </label>
+            </div>
+            <p v-if="doctorForm.service_ids.length === 0" class="text-xs text-amber-600 mt-1">Asigne al menos un servicio para que el medico pueda ver turnos disponibles</p>
+          </div>
           <div v-if="editingDoctor">
             <label class="block text-sm font-medium text-gray-700">Usuario de Acceso</label>
             <template v-if="editingDoctor.user_id">
@@ -529,7 +539,7 @@ const editingDoctor = ref(null)
 const editingService = ref(null)
 const editingUser = ref(null)
 
-const doctorForm = ref({ full_name: '', specialty: '', email: '', phone: '', username: '' })
+const doctorForm = ref({ full_name: '', specialty: '', email: '', phone: '', username: '', service_ids: [] })
 const serviceForm = ref({ name: '', code: '', prefix: '', estimated_duration: 15, tipo: 'servicio', categoria: '' })
 const userForm = ref({ full_name: '', username: '', role: 'capturista', is_active: true })
 
@@ -680,13 +690,23 @@ async function loadData() {
 
 function openNewDoctorModal() {
   editingDoctor.value = null
-  doctorForm.value = { full_name: '', specialty: '', email: '', phone: '', username: '' }
+  doctorForm.value = { full_name: '', specialty: '', email: '', phone: '', username: '', service_ids: [] }
   showDoctorModal.value = true
 }
 
-function editDoctor(doctor) {
+async function editDoctor(doctor) {
   editingDoctor.value = doctor
-  doctorForm.value = { ...doctor }
+  // Cargar los servicios del doctor desde el backend
+  let serviceIds = []
+  try {
+    const res = await api.get(`/doctors/${doctor.id}`)
+    if (res.data.success && res.data.data.services) {
+      serviceIds = res.data.data.services.map(s => s.id)
+    }
+  } catch (err) {
+    console.error('Error cargando servicios del doctor:', err)
+  }
+  doctorForm.value = { ...doctor, service_ids: serviceIds }
   showDoctorModal.value = true
 }
 
@@ -699,7 +719,7 @@ async function deleteDoctor() {
     await api.delete(`/doctors/${editingDoctor.value.id}`)
     alert('Medico eliminado exitosamente')
     showDoctorModal.value = false
-    doctorForm.value = { full_name: '', specialty: '', email: '', phone: '', username: '' }
+    doctorForm.value = { full_name: '', specialty: '', email: '', phone: '', username: '', service_ids: [] }
     editingDoctor.value = null
     await loadData()
   } catch (err) {
@@ -739,7 +759,7 @@ async function saveDoctor() {
       }
     }
     showDoctorModal.value = false
-    doctorForm.value = { full_name: '', specialty: '', email: '', phone: '', username: '' }
+    doctorForm.value = { full_name: '', specialty: '', email: '', phone: '', username: '', service_ids: [] }
     await loadData()
   } catch (err) {
     alert(err.response?.data?.message || 'Error guardando medico')

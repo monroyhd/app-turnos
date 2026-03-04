@@ -9,6 +9,12 @@ router.use(authenticateToken);
 // Listar medicos
 router.get('/', doctorController.list);
 
+// Perfil del medico autenticado (con services y consultorio)
+router.get('/me', requireRole('medico'), doctorController.getMe);
+
+// Actualizar consultorio del medico autenticado
+router.put('/my-consultorio', requireRole('medico'), doctorController.updateMyConsultorio);
+
 // Obtener medico por ID
 router.get('/:id', doctorController.getById);
 

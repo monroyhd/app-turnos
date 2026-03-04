@@ -109,6 +109,28 @@ const turnController = {
     }
   },
 
+  async getUnassignedForMe(req, res, next) {
+    try {
+      const doctor = await Doctor.findByUserId(req.user.id);
+
+      if (!doctor) {
+        return res.status(404).json({
+          success: false,
+          message: 'No tiene perfil de medico asociado'
+        });
+      }
+
+      const turns = await TurnService.getUnassignedForDoctor(doctor.id);
+
+      res.json({
+        success: true,
+        data: turns
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
   async getDisplayData(req, res, next) {
     try {
       const data = await TurnService.getDisplayData();
@@ -176,16 +198,21 @@ const turnController = {
     try {
       // Si es medico, usar su doctor_id
       let doctorId = req.body.doctor_id || null;
+      let consultorioId = req.body.consultorio_id || null;
 
       if (req.user.role === 'medico') {
         const doctor = await Doctor.findByUserId(req.user.id);
         if (doctor) {
           doctorId = doctor.id;
+          // Si no viene consultorio_id explícito, usar el del perfil del doctor
+          if (!consultorioId && doctor.consultorio_id) {
+            consultorioId = doctor.consultorio_id;
+          }
         }
       }
 
       // Ya no requiere doctor_id obligatorio - se puede llamar sin doctor asignado
-      const turn = await TurnService.callTurn(req.params.id, doctorId, req.user.id);
+      const turn = await TurnService.callTurn(req.params.id, doctorId, req.user.id, consultorioId);
 
       res.json({
         success: true,

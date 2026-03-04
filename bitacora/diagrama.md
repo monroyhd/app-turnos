@@ -209,11 +209,14 @@ erDiagram
     DOCTORS {
         int id PK
         int user_id FK
+        int consultorio_id FK
         string full_name
         string specialty
         string email
         string phone
     }
+
+    RECURSOS ||--o{ DOCTORS : "consultorio_id"
 
     SERVICES {
         int id PK
@@ -444,7 +447,9 @@ flowchart LR
     subgraph Doctors["/api/doctors"]
         D1[GET /]
         D2[POST /]
-        D3[GET /:id]
+        D3[GET /me - perfil medico]
+        D4[PUT /my-consultorio]
+        D5[GET /:id]
     end
 
     subgraph Services["/api/services"]
@@ -959,4 +964,4 @@ sequenceDiagram
 
 ---
 
-**Ultima actualizacion:** 2026-02-27 (v17 - Impresion de tickets de turno en impresora termica)
+**Ultima actualizacion:** 2026-03-03 (v19 - Fix turnos sin doctor + servicios obligatorios en admin)

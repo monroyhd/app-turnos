@@ -30,8 +30,9 @@ const Doctor = {
 
   async findById(id) {
     const doctor = await db(TABLE)
-      .select('doctors.*', 'users.username')
+      .select('doctors.*', 'users.username', 'recursos.nombre as consultorio_nombre', 'recursos.ubicacion as consultorio_ubicacion')
       .leftJoin('users', 'doctors.user_id', 'users.id')
+      .leftJoin('recursos', 'doctors.consultorio_id', 'recursos.id')
       .where('doctors.id', id)
       .first();
 
@@ -43,6 +44,29 @@ const Doctor = {
     }
 
     return doctor;
+  },
+
+  async findFullByUserId(userId) {
+    const doctor = await db(TABLE)
+      .select('doctors.*', 'users.username', 'recursos.nombre as consultorio_nombre', 'recursos.ubicacion as consultorio_ubicacion')
+      .leftJoin('users', 'doctors.user_id', 'users.id')
+      .leftJoin('recursos', 'doctors.consultorio_id', 'recursos.id')
+      .where({ 'doctors.user_id': userId, 'doctors.is_active': true })
+      .first();
+
+    if (doctor) {
+      doctor.services = await db('doctor_services')
+        .join('services', 'doctor_services.service_id', 'services.id')
+        .where('doctor_services.doctor_id', doctor.id)
+        .select('services.*');
+    }
+
+    return doctor;
+  },
+
+  async updateConsultorio(doctorId, consultorioId) {
+    await db(TABLE).where({ id: doctorId }).update({ consultorio_id: consultorioId });
+    return this.findById(doctorId);
   },
 
   async findByUserId(userId) {

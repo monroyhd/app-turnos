@@ -111,10 +111,14 @@ POST /api/turns
 - Paciente registrado opcional: si no se proporciona `patient_id`, el turno se crea solo con nombre y teléfono
 
 GET /api/turns/doctor/:id
-PUT /api/turns/:id/call
+PUT /api/turns/:id/call (body opcional: `doctor_id`, `consultorio_id`)
 PUT /api/turns/:id/start
 PUT /api/turns/:id/finish
 PUT /api/turns/:id/cancel (disponible desde CREATED, WAITING, CALLED, IN_SERVICE)
+
+### Medicos
+GET /api/doctors/me (perfil del medico autenticado con services y consultorio)
+PUT /api/doctors/my-consultorio (body: `consultorio_id` - persiste consultorio actual del medico)
 
 ### Recursos
 GET /api/recursos?tipo=CONSULTORIO&is_active=true (consultorios para selector)

@@ -21,6 +21,9 @@ router.get('/stats', turnController.getStats);
 // Mis turnos (para medicos)
 router.get('/my-turns', requireRole('medico'), turnController.getMyTurns);
 
+// Turnos sin asignar para mis servicios (para medicos)
+router.get('/unassigned-for-me', requireRole('medico'), turnController.getUnassignedForMe);
+
 // Turnos de un doctor especifico
 router.get('/doctor/:doctorId', turnController.getDoctorTurns);
 

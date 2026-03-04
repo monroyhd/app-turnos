@@ -232,6 +232,33 @@ const Turn = {
     return result;
   },
 
+  async findUnassignedByServices(serviceIds) {
+    if (!serviceIds || serviceIds.length === 0) return [];
+
+    return db(TABLE)
+      .select(
+        'turns.*',
+        db.raw('COALESCE(turns.patient_name, patients.full_name) as patient_name'),
+        db.raw('COALESCE(turns.patient_phone, patients.phone) as patient_phone'),
+        'patients.curp as patient_curp',
+        'services.name as service_name',
+        'services.prefix as service_prefix',
+        'recursos.nombre as consultorio_nombre',
+        'recursos.ubicacion as consultorio_ubicacion'
+      )
+      .leftJoin('patients', 'turns.patient_id', 'patients.id')
+      .leftJoin('services', 'turns.service_id', 'services.id')
+      .leftJoin('recursos', 'turns.consultorio_id', 'recursos.id')
+      .whereNull('turns.doctor_id')
+      .where('turns.status', TURN_STATUS.WAITING)
+      .whereIn('turns.service_id', serviceIds)
+      .whereRaw('DATE(turns.created_at) = CURRENT_DATE')
+      .orderBy([
+        { column: 'turns.priority', order: 'desc' },
+        { column: 'turns.waiting_at', order: 'asc' }
+      ]);
+  },
+
   async getCurrentlyInService(doctorId) {
     return db(TABLE)
       .select(

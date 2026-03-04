@@ -1,6 +1,7 @@
 const Turn = require('../models/turn');
 const Service = require('../models/service');
 const Patient = require('../models/patient');
+const Doctor = require('../models/doctor');
 const { generateTurnCode } = require('../utils/turnCodeGenerator');
 const { TURN_STATUS, TURN_PRIORITY, MQTT_EVENTS } = require('../utils/constants');
 const mqttService = require('./mqttService');
@@ -79,7 +80,7 @@ const TurnService = {
     return turn;
   },
 
-  async callTurn(turnId, doctorId, userId) {
+  async callTurn(turnId, doctorId, userId, consultorioId = null) {
     const turn = await Turn.findById(turnId);
 
     if (!turn) {
@@ -96,13 +97,16 @@ const TurnService = {
         error.statusCode = 400;
         throw error;
       }
+    }
 
-      // Actualizar doctor asignado si es diferente
-      if (turn.doctor_id !== doctorId) {
-        await require('knex')(require('../config/database')[process.env.NODE_ENV || 'development'])('turns')
-          .where({ id: turnId })
-          .update({ doctor_id: doctorId });
-      }
+    // Actualizar doctor y/o consultorio si es necesario
+    const updateFields = {};
+    if (doctorId && turn.doctor_id !== doctorId) updateFields.doctor_id = doctorId;
+    if (consultorioId) updateFields.consultorio_id = consultorioId;
+    if (Object.keys(updateFields).length > 0) {
+      await require('knex')(require('../config/database')[process.env.NODE_ENV || 'development'])('turns')
+        .where({ id: turnId })
+        .update(updateFields);
     }
 
     const updatedTurn = await Turn.updateStatus(turnId, TURN_STATUS.CALLED, userId);
@@ -226,6 +230,14 @@ const TurnService = {
       waiting: waitingTurns.slice(0, 10), // Solo los proximos 10
       stats
     };
+  },
+
+  async getUnassignedForDoctor(doctorId) {
+    const doctor = await Doctor.findById(doctorId);
+    if (!doctor || !doctor.services || doctor.services.length === 0) return [];
+
+    const serviceIds = doctor.services.map(s => s.id);
+    return Turn.findUnassignedByServices(serviceIds);
   },
 
   async getHistory(turnId) {

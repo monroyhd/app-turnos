@@ -2,6 +2,35 @@
   <div class="max-w-7xl mx-auto px-4 py-6">
     <h1 class="text-2xl font-bold text-gray-900 mb-6">Panel del Medico</h1>
 
+    <!-- Aviso si no tiene servicios asignados -->
+    <div v-if="noServicesWarning" class="bg-amber-50 border border-amber-300 rounded-lg p-4 mb-6 flex items-start gap-3">
+      <span class="text-amber-600 text-xl">&#9888;</span>
+      <div>
+        <p class="text-amber-800 font-semibold">No tiene servicios asignados</p>
+        <p class="text-amber-700 text-sm mt-1">No podra ver turnos disponibles sin doctor. Contacte al administrador para que le asigne servicios.</p>
+      </div>
+    </div>
+
+    <!-- Selector de Consultorio -->
+    <div class="bg-white rounded-lg shadow p-4 mb-6">
+      <div class="flex items-center gap-4">
+        <label class="text-sm font-semibold text-gray-700 whitespace-nowrap">Consultorio actual:</label>
+        <select
+          v-model="selectedConsultorio"
+          @change="changeConsultorio"
+          class="flex-1 max-w-xs px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option :value="null">-- Sin consultorio --</option>
+          <option v-for="c in consultorios" :key="c.id" :value="c.id">
+            {{ c.nombre }}{{ c.ubicacion ? ' - ' + c.ubicacion : '' }}
+          </option>
+        </select>
+        <span v-if="doctorProfile?.consultorio_nombre" class="text-sm text-green-600 font-medium">
+          {{ doctorProfile.consultorio_nombre }}
+        </span>
+      </div>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Turno Actual -->
       <div class="lg:col-span-1">
@@ -103,6 +132,39 @@
           </div>
         </div>
 
+        <!-- Turnos Disponibles (sin asignar, de mis servicios) -->
+        <div v-if="turnsStore.unassignedTurns.length > 0" class="bg-white rounded-lg shadow p-6 mt-6">
+          <h2 class="text-lg font-semibold mb-4">
+            Turnos Disponibles
+            <span class="text-sm font-normal text-gray-500 ml-2">(sin medico asignado)</span>
+          </h2>
+
+          <div class="space-y-3">
+            <div
+              v-for="turn in turnsStore.unassignedTurns"
+              :key="turn.id"
+              class="border border-dashed border-orange-300 rounded-lg p-4 flex items-center justify-between bg-orange-50"
+              :class="getPriorityClass(turn.priority)"
+            >
+              <div class="flex items-center space-x-4">
+                <div>
+                  <span class="text-xl font-bold text-orange-600">{{ turn.code }}</span>
+                  <p class="text-sm text-gray-600">{{ turn.patient_name || 'Sin registro' }}</p>
+                  <p class="text-xs text-gray-500">{{ turn.service_name }}</p>
+                </div>
+              </div>
+
+              <button
+                @click="callUnassignedTurn(turn.id)"
+                :disabled="!!currentTurn"
+                class="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50"
+              >
+                Llamar
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Turnos Finalizados -->
         <div class="bg-white rounded-lg shadow p-6 mt-6">
           <h2 class="text-lg font-semibold mb-4">Turnos Finalizados Hoy</h2>
@@ -137,9 +199,17 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useTurnsStore } from '../stores/turns'
+import api from '../services/api'
 import mqttClient from '../services/mqttClient'
 
 const turnsStore = useTurnsStore()
+const doctorProfile = ref(null)
+const consultorios = ref([])
+const selectedConsultorio = ref(null)
+
+const noServicesWarning = computed(() =>
+  doctorProfile.value && (!doctorProfile.value.services || doctorProfile.value.services.length === 0)
+)
 
 const currentTurn = computed(() =>
   turnsStore.turns.find(t => t.status === 'IN_SERVICE')
@@ -163,12 +233,20 @@ const finishedTurns = computed(() =>
 )
 
 onMounted(async () => {
-  await turnsStore.fetchMyTurns()
+  await Promise.all([
+    turnsStore.fetchMyTurns(),
+    turnsStore.fetchUnassignedTurns(),
+    loadDoctorProfile(),
+    loadConsultorios()
+  ])
   mqttClient.connect()
   mqttClient.onMessage('doctor', async (data) => {
     // Refrescar turnos cuando hay cualquier evento
     if (data.event) {
-      await turnsStore.fetchMyTurns()
+      await Promise.all([
+        turnsStore.fetchMyTurns(),
+        turnsStore.fetchUnassignedTurns()
+      ])
     }
   })
 })
@@ -177,10 +255,57 @@ onUnmounted(() => {
   mqttClient.offMessage('doctor')
 })
 
+async function loadDoctorProfile() {
+  try {
+    const res = await api.get('/doctors/me')
+    if (res.data.success) {
+      doctorProfile.value = res.data.data
+      selectedConsultorio.value = res.data.data.consultorio_id || null
+    }
+  } catch (err) {
+    console.error('Error cargando perfil de medico:', err)
+  }
+}
+
+async function loadConsultorios() {
+  try {
+    const res = await api.get('/recursos?tipo=CONSULTORIO&is_active=true')
+    if (res.data.success) {
+      consultorios.value = res.data.data
+    }
+  } catch (err) {
+    console.error('Error cargando consultorios:', err)
+  }
+}
+
+async function changeConsultorio() {
+  try {
+    const res = await api.put('/doctors/my-consultorio', { consultorio_id: selectedConsultorio.value })
+    if (res.data.success) {
+      doctorProfile.value = res.data.data
+    }
+  } catch (err) {
+    alert(err.response?.data?.message || 'Error actualizando consultorio')
+  }
+}
+
 async function callTurn(turnId) {
-  const result = await turnsStore.updateTurnStatus(turnId, 'call')
+  const result = await turnsStore.updateTurnStatus(turnId, 'call', { consultorio_id: selectedConsultorio.value })
   if (!result.success) {
     alert(result.message)
+  }
+}
+
+async function callUnassignedTurn(turnId) {
+  const result = await turnsStore.updateTurnStatus(turnId, 'call', { consultorio_id: selectedConsultorio.value })
+  if (!result.success) {
+    alert(result.message)
+  } else {
+    // Refrescar ambas listas: el turno ahora está asignado al médico
+    await Promise.all([
+      turnsStore.fetchMyTurns(),
+      turnsStore.fetchUnassignedTurns()
+    ])
   }
 }
 

@@ -133,15 +133,25 @@
               <div class="flex gap-2 ml-4">
                 <!-- Estado: WAITING -->
                 <template v-if="turn.status === 'WAITING'">
-                  <!-- Si tiene doctor asignado, mostrar boton Llamar directo -->
-                  <button
-                    v-if="turn.doctor_id"
-                    @click="callTurn(turn)"
-                    class="px-3 py-1 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700"
-                  >
-                    Llamar
-                  </button>
-                  <!-- Si no tiene doctor, mostrar selector y boton -->
+                  <!-- Si tiene doctor asignado, mostrar selector consultorio y boton Llamar -->
+                  <template v-if="turn.doctor_id">
+                    <select
+                      v-model="selectedConsultorioForTurn[turn.id]"
+                      class="px-2 py-1 border border-gray-300 rounded text-sm"
+                    >
+                      <option value="">Consultorio</option>
+                      <option v-for="c in consultorios" :key="c.id" :value="c.id">
+                        {{ c.nombre }}
+                      </option>
+                    </select>
+                    <button
+                      @click="callTurn(turn)"
+                      class="px-3 py-1 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700"
+                    >
+                      Llamar
+                    </button>
+                  </template>
+                  <!-- Si no tiene doctor, mostrar selector doctor + consultorio y boton -->
                   <template v-else>
                     <select
                       v-model="selectedDoctorForTurn[turn.id]"
@@ -150,6 +160,15 @@
                       <option value="">Sin doctor</option>
                       <option v-for="doctor in doctors" :key="doctor.id" :value="doctor.id">
                         {{ doctor.full_name }}
+                      </option>
+                    </select>
+                    <select
+                      v-model="selectedConsultorioForTurn[turn.id]"
+                      class="px-2 py-1 border border-gray-300 rounded text-sm"
+                    >
+                      <option value="">Consultorio</option>
+                      <option v-for="c in consultorios" :key="c.id" :value="c.id">
+                        {{ c.nombre }}
                       </option>
                     </select>
                     <button
@@ -258,6 +277,7 @@ const printEnabled = ref(isPrintEnabled())
 watch(printEnabled, (val) => setPrintEnabled(val))
 const stats = ref({})
 const selectedDoctorForTurn = reactive({})
+const selectedConsultorioForTurn = reactive({})
 
 const newTurn = ref({
   patient_name: '',
@@ -354,8 +374,9 @@ async function createTurn() {
 async function callTurn(turn) {
   // Usar el doctor seleccionado o el asignado al turno
   const doctorId = selectedDoctorForTurn[turn.id] || turn.doctor_id || null
+  const consultorioId = selectedConsultorioForTurn[turn.id] || turn.consultorio_id || null
 
-  const result = await turnsStore.updateTurnStatus(turn.id, 'call', { doctor_id: doctorId })
+  const result = await turnsStore.updateTurnStatus(turn.id, 'call', { doctor_id: doctorId, consultorio_id: consultorioId })
   if (!result.success) {
     alert(result.message)
   } else {
