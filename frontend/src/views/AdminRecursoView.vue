@@ -476,7 +476,7 @@
             >
               <option :value="null">-- Sin asignar --</option>
               <option v-for="doctor in doctors" :key="doctor.id" :value="doctor.id">
-                {{ doctor.full_name }} - {{ doctor.specialty || 'General' }}
+                {{ doctor.full_name }} - {{ doctor.specialty || 'Sin servicios' }}
               </option>
             </select>
           </div>

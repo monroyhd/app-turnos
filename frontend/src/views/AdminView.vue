@@ -93,7 +93,7 @@
             <tr>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Especialidad</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Servicios</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Telefono</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
@@ -353,15 +353,6 @@
             <input v-model="doctorForm.full_name" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700">Especialidad *</label>
-            <select v-model="doctorForm.specialty" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
-              <option value="">Seleccionar especialidad</option>
-              <option v-for="service in services" :key="service.id" :value="service.name">
-                {{ service.name }}
-              </option>
-            </select>
-          </div>
-          <div>
             <label class="block text-sm font-medium text-gray-700">Email *</label>
             <input v-model="doctorForm.email" type="email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="doctor@hospital.com">
           </div>
@@ -539,7 +530,7 @@ const editingDoctor = ref(null)
 const editingService = ref(null)
 const editingUser = ref(null)
 
-const doctorForm = ref({ full_name: '', specialty: '', email: '', phone: '', username: '', service_ids: [] })
+const doctorForm = ref({ full_name: '', email: '', phone: '', username: '', service_ids: [] })
 const serviceForm = ref({ name: '', code: '', prefix: '', estimated_duration: 15, tipo: 'servicio', categoria: '' })
 const userForm = ref({ full_name: '', username: '', role: 'capturista', is_active: true })
 
@@ -690,7 +681,7 @@ async function loadData() {
 
 function openNewDoctorModal() {
   editingDoctor.value = null
-  doctorForm.value = { full_name: '', specialty: '', email: '', phone: '', username: '', service_ids: [] }
+  doctorForm.value = { full_name: '', email: '', phone: '', username: '', service_ids: [] }
   showDoctorModal.value = true
 }
 
@@ -719,7 +710,7 @@ async function deleteDoctor() {
     await api.delete(`/doctors/${editingDoctor.value.id}`)
     alert('Medico eliminado exitosamente')
     showDoctorModal.value = false
-    doctorForm.value = { full_name: '', specialty: '', email: '', phone: '', username: '', service_ids: [] }
+    doctorForm.value = { full_name: '', email: '', phone: '', username: '', service_ids: [] }
     editingDoctor.value = null
     await loadData()
   } catch (err) {
@@ -759,7 +750,7 @@ async function saveDoctor() {
       }
     }
     showDoctorModal.value = false
-    doctorForm.value = { full_name: '', specialty: '', email: '', phone: '', username: '', service_ids: [] }
+    doctorForm.value = { full_name: '', email: '', phone: '', username: '', service_ids: [] }
     await loadData()
   } catch (err) {
     alert(err.response?.data?.message || 'Error guardando medico')

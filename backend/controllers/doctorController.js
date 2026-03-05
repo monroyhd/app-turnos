@@ -42,11 +42,11 @@ async function generateUniqueUsername(fullName) {
 const doctorCreateSchema = Joi.object({
   user_id: Joi.number().integer(),
   full_name: Joi.string().max(100).required(),
-  specialty: Joi.string().max(100).required(),
+  specialty: Joi.string().max(100).optional().allow('', null),
   email: Joi.string().email().max(100).required(),
   phone: Joi.string().max(20).allow('', null),
   is_active: Joi.boolean(),
-  service_ids: Joi.array().items(Joi.number().integer())
+  service_ids: Joi.array().items(Joi.number().integer()).min(1).required()
 });
 
 const doctorUpdateSchema = Joi.object({
@@ -55,7 +55,7 @@ const doctorUpdateSchema = Joi.object({
   email: Joi.string().email().max(100).allow('', null),
   phone: Joi.string().max(20).allow('', null),
   is_active: Joi.boolean(),
-  service_ids: Joi.array().items(Joi.number().integer()),
+  service_ids: Joi.array().items(Joi.number().integer()).min(1),
   username: Joi.string().max(50).allow('', null)
 });
 

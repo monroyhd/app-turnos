@@ -902,7 +902,7 @@ sequenceDiagram
 ```mermaid
 flowchart TD
     subgraph Update["Al actualizar doctor (PUT /api/doctors/:id)"]
-        U1["Recibir datos: full_name, specialty, etc."]
+        U1["Recibir datos: full_name, service_ids, etc."]
         U2{"¿Cambio full_name?"}
         U2 -->|Si| U3["User.update(user_id, {full_name})"]
         U2 -->|No| U4["Continuar"]
@@ -912,6 +912,7 @@ flowchart TD
         U6 --> U7["User.update(user_id, {username})"]
         U5 -->|No| U8["Doctor.update(id, data)"]
         U7 --> U8
+        U8 --> U9["deriveAndSetSpecialty(id)<br/>specialty = nombres de servicios"]
     end
 
     subgraph Scripts["Scripts de mantenimiento"]
@@ -964,4 +965,4 @@ sequenceDiagram
 
 ---
 
-**Ultima actualizacion:** 2026-03-03 (v19 - Fix turnos sin doctor + servicios obligatorios en admin)
+**Ultima actualizacion:** 2026-03-05 (v20 - Eliminar campo Especialidad, derivar de Servicios)

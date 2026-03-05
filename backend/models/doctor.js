@@ -77,12 +77,22 @@ const Doctor = {
     return db(TABLE).where({ employee_number: employeeNumber }).first();
   },
 
+  async deriveAndSetSpecialty(doctorId) {
+    const services = await db('doctor_services')
+      .join('services', 'doctor_services.service_id', 'services.id')
+      .where('doctor_services.doctor_id', doctorId)
+      .select('services.name')
+      .orderBy('services.name');
+
+    const specialty = services.map(s => s.name).join(', ').substring(0, 100) || null;
+    await db(TABLE).where({ id: doctorId }).update({ specialty });
+  },
+
   async create(doctorData) {
     const [id] = await db(TABLE)
       .insert({
         user_id: doctorData.user_id,
         full_name: doctorData.full_name,
-        specialty: doctorData.specialty,
         email: doctorData.email,
         phone: doctorData.phone,
         is_active: true
@@ -95,6 +105,8 @@ const Doctor = {
       await this.setServices(doctorId, doctorData.service_ids);
     }
 
+    await this.deriveAndSetSpecialty(doctorId);
+
     return this.findById(doctorId);
   },
 
@@ -102,7 +114,6 @@ const Doctor = {
     const updateData = {};
 
     if (doctorData.full_name) updateData.full_name = doctorData.full_name;
-    if (doctorData.specialty !== undefined) updateData.specialty = doctorData.specialty;
     if (doctorData.email !== undefined) updateData.email = doctorData.email;
     if (doctorData.phone !== undefined) updateData.phone = doctorData.phone;
     if (doctorData.is_active !== undefined) updateData.is_active = doctorData.is_active;
@@ -112,6 +123,8 @@ const Doctor = {
     if (doctorData.service_ids) {
       await this.setServices(id, doctorData.service_ids);
     }
+
+    await this.deriveAndSetSpecialty(id);
 
     return this.findById(id);
   },

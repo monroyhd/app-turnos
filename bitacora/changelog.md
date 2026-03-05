@@ -1,5 +1,36 @@
 # Changelog - Sistema de Turnos Hospitalarios
 
+## [2026-03-05] - Refactor: Eliminar campo Especialidad, derivar de Servicios
+
+### Problema
+El formulario de doctor tenia dos campos redundantes: Especialidad (texto decorativo) y Servicios (relacion real usada para filtrar turnos). Un doctor con especialidad "Consulta General" pero sin el servicio asignado en `doctor_services` nunca veia turnos disponibles, causando confusion.
+
+### Solucion
+
+#### 1. Backend: Auto-derivar specialty desde services
+- `backend/models/doctor.js` - Nuevo metodo `deriveAndSetSpecialty(doctorId)` que consulta `doctor_services` + `services` y actualiza `doctors.specialty` con nombres unidos por coma (max 100 chars)
+- `create()` y `update()` ya no reciben `specialty` directamente, se auto-deriva despues de `setServices()`
+
+#### 2. Backend: Validacion ajustada
+- `backend/controllers/doctorController.js` - `specialty` ahora es `optional().allow('', null)` en create schema, `service_ids` es `min(1).required()` en create y `min(1)` en update
+
+#### 3. Frontend: Formulario simplificado
+- `frontend/src/views/AdminView.vue` - Eliminado `<select>` de Especialidad del modal de doctor, quitado `specialty` de `doctorForm` y resets, header de tabla cambiado de "Especialidad" a "Servicios"
+
+#### 4. Frontend: Fallback actualizado en vistas de recursos
+- `frontend/src/views/AdminRecursoView.vue` y `AdminHabitacionesView.vue` - Fallback cambiado de `'General'` a `'Sin servicios'`
+
+#### 5. Migracion backfill (019)
+- `backend/database/migrations/019_backfill_specialty_from_services.js` - Recorre doctores activos y actualiza `specialty` con nombres de sus servicios
+
+### Lo que NO cambia
+- Columna `doctors.specialty` en la DB se mantiene (auto-poblada)
+- JOINs en `turn.js`, `usoRecurso.js` siguen leyendo `doctors.specialty`
+- Denormalizacion en `historial_recursos.especialidad` sigue funcionando
+- Filtro `?specialty=` en API de doctores sigue funcionando
+
+---
+
 ## [2026-03-03] - Fix: Turnos sin doctor no visibles para doctores de Consulta General
 
 ### Problema
