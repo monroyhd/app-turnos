@@ -1,5 +1,45 @@
 # Changelog - Sistema de Turnos Hospitalarios
 
+## [2026-03-06] - Fix: Connection leak PostgreSQL - Singleton de knex
+
+### Problema
+En produccion se observaban 26+ conexiones PostgreSQL establecidas simultaneamente. Cada uno de los 11 archivos (10 modelos + `turnCodeGenerator.js`) creaba su propia instancia de `knex()` con pool independiente (min:2, max:10), resultando en 22-110 conexiones posibles. Ademas, `turnService.js` creaba una instancia inline en cada llamada a `callTurn()` sin reusar conexiones.
+
+### Causa raiz
+```
+// ANTES: cada modelo creaba su propio pool
+const knex = require('knex');
+const dbConfig = require('../config/database');
+const db = knex(dbConfig[...]);  // ← pool nuevo por archivo
+```
+
+11 archivos × pool(min:2, max:10) = 22 a 110 conexiones
+
+### Solucion
+
+#### 1. Singleton de conexion (nuevo)
+- `backend/config/db.js` — Exporta una unica instancia de knex compartida por toda la app
+
+#### 2. Modelos actualizados (10 archivos)
+- `backend/models/doctor.js`, `patient.js`, `turn.js`, `user.js`, `service.js`, `settings.js`, `recurso.js`, `usoRecurso.js`, `historialRecurso.js`, `hospitalizacion.js` — Cambiados de `knex(config)` a `require('../config/db')`
+
+#### 3. Utilidades actualizadas
+- `backend/utils/turnCodeGenerator.js` — Mismo cambio a singleton
+- `backend/services/turnService.js` — Eliminada instancia inline `require('knex')(require('../config/database')[...])`, reemplazada por `require('../config/db')`
+
+#### 4. Pool config mejorado
+- `backend/config/database.js` — Agregados `acquireTimeoutMillis: 30000` y `idleTimeoutMillis: 30000` para liberar conexiones inactivas
+
+### Resultado
+| Metrica | Antes | Despues |
+|---------|-------|---------|
+| Pools de conexion | 11+ independientes | 1 compartido |
+| Conexiones minimas | 22 (11×2) | 2 |
+| Conexiones maximas | 110 (11×10) | 10 |
+| Instancias inline | 1 (sin pool) | 0 |
+
+---
+
 ## [2026-03-05] - Refactor: Eliminar campo Especialidad, derivar de Servicios
 
 ### Problema

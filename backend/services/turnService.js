@@ -104,7 +104,7 @@ const TurnService = {
     if (doctorId && turn.doctor_id !== doctorId) updateFields.doctor_id = doctorId;
     if (consultorioId) updateFields.consultorio_id = consultorioId;
     if (Object.keys(updateFields).length > 0) {
-      await require('knex')(require('../config/database')[process.env.NODE_ENV || 'development'])('turns')
+      await require('../config/db')('turns')
         .where({ id: turnId })
         .update(updateFields);
     }

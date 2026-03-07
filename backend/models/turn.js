@@ -1,8 +1,6 @@
-const knex = require('knex');
-const dbConfig = require('../config/database');
+const db = require('../config/db');
 const { TURN_STATUS, VALID_TRANSITIONS } = require('../utils/constants');
 
-const db = knex(dbConfig[process.env.NODE_ENV || 'development']);
 
 const TABLE = 'turns';
 

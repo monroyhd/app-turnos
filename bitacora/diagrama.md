@@ -22,6 +22,7 @@ flowchart TB
         SettingsCtrl[SettingsController]
         Services[Services]
         Models[Models]
+        DbSingleton[config/db.js<br/>Singleton knex<br/>pool min:2 max:10]
         Uploads[/uploads Static Files]
     end
 
@@ -39,7 +40,8 @@ flowchart TB
     SettingsCtrl --> Models
     SettingsCtrl --> FS
     Services --> Models
-    Models --> PG
+    Models --> DbSingleton
+    DbSingleton -->|1 pool compartido| PG
     Services -->|Publish| MQTT
     MQTT -->|WebSocket| Frontend
     Frontend -->|GET /uploads/*| Uploads
@@ -965,4 +967,66 @@ sequenceDiagram
 
 ---
 
-**Ultima actualizacion:** 2026-03-05 (v20 - Eliminar campo Especialidad, derivar de Servicios)
+## 19. Arquitectura de Conexiones PostgreSQL (Singleton knex)
+
+```mermaid
+flowchart TB
+    subgraph Antes["❌ ANTES: 11+ pools independientes"]
+        direction TB
+        M1["doctor.js<br/>pool(2-10)"]
+        M2["turn.js<br/>pool(2-10)"]
+        M3["user.js<br/>pool(2-10)"]
+        M4["patient.js<br/>pool(2-10)"]
+        M5["service.js<br/>pool(2-10)"]
+        M6["...6 mas"]
+        PG1[(PostgreSQL<br/>22-110 conexiones)]
+        M1 --> PG1
+        M2 --> PG1
+        M3 --> PG1
+        M4 --> PG1
+        M5 --> PG1
+        M6 --> PG1
+    end
+
+    subgraph Despues["✅ DESPUES: 1 pool compartido"]
+        direction TB
+        MA["doctor.js"]
+        MB["turn.js"]
+        MC["user.js"]
+        MD["patient.js"]
+        ME["...todos los modelos"]
+        DB["config/db.js<br/>Singleton knex<br/>pool(2-10)"]
+        PG2[(PostgreSQL<br/>2-10 conexiones)]
+        MA --> DB
+        MB --> DB
+        MC --> DB
+        MD --> DB
+        ME --> DB
+        DB --> PG2
+    end
+
+    style Antes fill:#fee2e2,stroke:#dc2626
+    style Despues fill:#dcfce7,stroke:#16a34a
+```
+
+### Archivos que usan el singleton
+| Archivo | Antes | Despues |
+|---------|-------|---------|
+| `models/*.js` (10 archivos) | `knex(config)` propio | `require('../config/db')` |
+| `utils/turnCodeGenerator.js` | `knex(config)` propio | `require('../config/db')` |
+| `services/turnService.js` | `require('knex')(config)` inline | `require('../config/db')` |
+| `config/db.js` (nuevo) | - | Singleton exportado |
+
+### Config del pool
+```js
+pool: {
+  min: 2,                      // conexiones minimas
+  max: 10,                     // conexiones maximas
+  acquireTimeoutMillis: 30000, // timeout para obtener conexion
+  idleTimeoutMillis: 30000     // liberar conexiones inactivas
+}
+```
+
+---
+
+**Ultima actualizacion:** 2026-03-06 (v21 - Fix connection leak PostgreSQL, singleton knex)

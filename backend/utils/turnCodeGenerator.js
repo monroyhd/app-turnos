@@ -1,7 +1,4 @@
-const knex = require('knex');
-const dbConfig = require('../config/database');
-
-const db = knex(dbConfig[process.env.NODE_ENV || 'development']);
+const db = require('../config/db');
 
 // Estados activos: turnos que estan en uso y no deben repetir codigo
 const ACTIVE_STATUSES = ['CREATED', 'WAITING', 'CALLED', 'IN_SERVICE'];

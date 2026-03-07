@@ -1,8 +1,6 @@
-const knex = require('knex');
-const dbConfig = require('../config/database');
+const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 
-const db = knex(dbConfig[process.env.NODE_ENV || 'development']);
 
 const TABLE = 'users';
 
