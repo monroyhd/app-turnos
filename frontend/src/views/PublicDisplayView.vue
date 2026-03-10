@@ -143,10 +143,14 @@
       </div>
     </main>
 
-    <!-- Audio para anuncios -->
-    <audio ref="audioElement" preload="auto">
-      <source src="/sounds/notification.mp3" type="audio/mpeg">
-    </audio>
+    <!-- Botón para activar sonido (requerido por política de autoplay) -->
+    <button
+      v-if="!soundEnabled"
+      @click="enableSound"
+      class="fixed bottom-6 right-6 bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-3 rounded-full shadow-lg text-lg font-semibold transition-all duration-300 animate-pulse z-50"
+    >
+      🔔 Activar Sonido
+    </button>
   </div>
 </template>
 
@@ -155,10 +159,11 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useTurnsStore } from '../stores/turns'
 import { useSettingsStore } from '../stores/settings'
 import mqttClient from '../services/mqttClient'
+import { playNotificationChime, unlockAudio, isAudioUnlocked, tryAutoUnlock } from '../utils/notificationSound'
 
 const turnsStore = useTurnsStore()
 const settingsStore = useSettingsStore()
-const audioElement = ref(null)
+const soundEnabled = ref(false)
 
 const currentTime = ref('')
 const currentDate = ref('')
@@ -205,14 +210,15 @@ function updateClock() {
   currentDate.value = now.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 }
 
+async function enableSound() {
+  await unlockAudio()
+  soundEnabled.value = true
+  // Reproducir un tono de prueba para confirmar
+  playNotificationChime()
+}
+
 function playNotificationSound() {
-  if (audioElement.value) {
-    audioElement.value.currentTime = 0
-    audioElement.value.volume = 1.0
-    audioElement.value.play().catch(() => {
-      // Autoplay bloqueado por el navegador
-    })
-  }
+  playNotificationChime()
 }
 
 function triggerNewTurnAnimation() {
@@ -260,6 +266,12 @@ onMounted(async () => {
   // Conectar MQTT
   mqttClient.connect()
   mqttClient.onMessage('display', handleMqttUpdate)
+
+  // Auto-detectar si el audio ya está desbloqueado (modo kiosco)
+  const autoUnlocked = await tryAutoUnlock()
+  if (autoUnlocked) {
+    soundEnabled.value = true
+  }
 
   // Refrescar datos periodicamente como fallback
   refreshInterval = setInterval(() => {
