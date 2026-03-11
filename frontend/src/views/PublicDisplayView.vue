@@ -25,40 +25,68 @@
         <!-- Panel Principal: Turno Llamado -->
         <div class="lg:col-span-2 flex flex-col gap-6">
           <!-- Turnos Llamados -->
-          <div v-if="allCalledTurns.length > 0" class="flex-1 flex flex-col gap-4">
+          <div v-if="allCalledTurns.length > 0" class="flex-1 min-h-0 flex flex-col" :class="calledTurnLayout.containerGap">
             <div
               v-for="(turn, index) in allCalledTurns"
               :key="turn.id"
-              class="flex-1 rounded-3xl shadow-2xl border-4 transition-all duration-300"
+              class="flex-1 min-h-0 rounded-3xl shadow-2xl border-4 transition-all duration-300"
               :class="[
-                allCalledTurns.length === 1 ? 'p-8' : 'p-4',
+                calledTurnLayout.cardPadding,
                 isNewTurn && index === 0 ? 'animate-pulse-border bg-gradient-to-br from-emerald-500 via-cyan-500 to-blue-600 border-yellow-400' : 'bg-gradient-to-br from-blue-600 via-cyan-600 to-teal-500 border-cyan-400/50'
               ]"
             >
-              <div class="text-center h-full flex flex-col justify-center">
-                <p class="text-white/80 uppercase tracking-widest font-semibold" :class="allCalledTurns.length === 1 ? 'text-2xl mb-2' : 'text-lg mb-1'">TURNO</p>
+              <!-- Layout vertical para 1-2 turnos -->
+              <div v-if="!calledTurnLayout.horizontal" class="text-center h-full flex flex-col justify-center">
+                <p class="text-white/80 uppercase tracking-widest font-semibold" :class="calledTurnLayout.labelSize">TURNO</p>
                 <p
                   class="font-black text-white drop-shadow-lg"
                   :class="[
-                    allCalledTurns.length === 1 ? 'text-9xl mb-4' : allCalledTurns.length === 2 ? 'text-7xl mb-2' : 'text-5xl mb-1',
+                    calledTurnLayout.codeSize,
                     isNewTurn && index === 0 ? 'animate-bounce-slow' : ''
                   ]"
                 >
                   {{ turn.code }}
                 </p>
-                <p class="font-semibold text-white/90" :class="allCalledTurns.length === 1 ? 'text-4xl mb-8' : 'text-2xl mb-3'">
+                <p class="font-semibold text-white/90" :class="calledTurnLayout.patientSize">
                   {{ turn.patient_name || 'Paciente' }}
                 </p>
 
                 <div class="flex justify-center items-center gap-4">
-                  <div class="bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30" :class="allCalledTurns.length === 1 ? 'px-8 py-4' : 'px-5 py-2'">
+                  <div class="bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30" :class="calledTurnLayout.boxPadding">
                     <p class="text-white/70 text-sm uppercase tracking-wider font-medium">Consultorio</p>
-                    <p class="font-black text-yellow-300 drop-shadow" :class="allCalledTurns.length === 1 ? 'text-4xl' : 'text-2xl'">{{ turn.consultorio_nombre || turn.office_number || '-' }}</p>
+                    <p class="font-black text-yellow-300 drop-shadow" :class="calledTurnLayout.consultorioSize">{{ turn.consultorio_nombre || turn.office_number || '-' }}</p>
                   </div>
-                  <div class="bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30" :class="allCalledTurns.length === 1 ? 'px-8 py-4' : 'px-5 py-2'">
+                  <div class="bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30" :class="calledTurnLayout.boxPadding">
                     <p class="text-white/70 text-sm uppercase tracking-wider font-medium">Doctor</p>
-                    <p class="font-bold text-white" :class="allCalledTurns.length === 1 ? 'text-xl' : 'text-lg'">{{ turn.doctor_name || '-' }}</p>
+                    <p class="font-bold text-white" :class="calledTurnLayout.doctorSize">{{ turn.doctor_name || '-' }}</p>
                   </div>
+                </div>
+              </div>
+
+              <!-- Layout horizontal compacto para 3+ turnos -->
+              <div v-else class="h-full flex items-center justify-between gap-4">
+                <div class="flex items-center gap-4 flex-1 min-w-0">
+                  <p
+                    class="font-black text-white drop-shadow-lg shrink-0"
+                    :class="[
+                      calledTurnLayout.codeSize,
+                      isNewTurn && index === 0 ? 'animate-bounce-slow' : ''
+                    ]"
+                  >
+                    {{ turn.code }}
+                  </p>
+                  <p class="font-semibold text-white/90 truncate" :class="calledTurnLayout.patientSize">
+                    {{ turn.patient_name || 'Paciente' }}
+                  </p>
+                </div>
+                <div class="flex items-center gap-3 shrink-0">
+                  <span class="text-yellow-300 font-black" :class="calledTurnLayout.consultorioSize">
+                    {{ turn.consultorio_nombre || turn.office_number || '-' }}
+                  </span>
+                  <span class="text-white/70">|</span>
+                  <span class="font-bold text-white/80 truncate max-w-[150px]" :class="calledTurnLayout.doctorSize">
+                    {{ turn.doctor_name || '-' }}
+                  </span>
                 </div>
               </div>
             </div>
@@ -181,6 +209,64 @@ const inServiceTurns = computed(() => {
 
 const waitingList = computed(() => {
   return displayData.value.waiting || []
+})
+
+// Clases dinámicas según cantidad de turnos llamados
+const calledTurnLayout = computed(() => {
+  const count = allCalledTurns.value.length
+  if (count <= 1) return {
+    containerGap: 'gap-4',
+    cardPadding: 'p-8',
+    labelSize: 'text-2xl mb-2',
+    codeSize: 'text-9xl mb-4',
+    patientSize: 'text-4xl mb-8',
+    boxPadding: 'px-8 py-4',
+    consultorioSize: 'text-4xl',
+    doctorSize: 'text-xl',
+    horizontal: false
+  }
+  if (count === 2) return {
+    containerGap: 'gap-3',
+    cardPadding: 'p-4',
+    labelSize: 'text-lg mb-1',
+    codeSize: 'text-7xl mb-2',
+    patientSize: 'text-2xl mb-3',
+    boxPadding: 'px-5 py-2',
+    consultorioSize: 'text-2xl',
+    doctorSize: 'text-lg',
+    horizontal: false
+  }
+  if (count === 3) return {
+    containerGap: 'gap-2',
+    cardPadding: 'p-3',
+    labelSize: 'text-base mb-0',
+    codeSize: 'text-5xl',
+    patientSize: 'text-xl',
+    consultorioSize: 'text-lg',
+    doctorSize: 'text-base',
+    horizontal: true
+  }
+  if (count === 4) return {
+    containerGap: 'gap-2',
+    cardPadding: 'p-2',
+    labelSize: 'text-sm mb-0',
+    codeSize: 'text-4xl',
+    patientSize: 'text-lg',
+    consultorioSize: 'text-base',
+    doctorSize: 'text-sm',
+    horizontal: true
+  }
+  // 5-6
+  return {
+    containerGap: 'gap-1',
+    cardPadding: 'p-2',
+    labelSize: 'text-xs mb-0',
+    codeSize: 'text-3xl',
+    patientSize: 'text-base',
+    consultorioSize: 'text-sm',
+    doctorSize: 'text-xs',
+    horizontal: true
+  }
 })
 
 function getWaitingItemClass(index, priority) {
