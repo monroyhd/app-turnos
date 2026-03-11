@@ -20,10 +20,10 @@
       </div>
     </header>
 
-    <main class="p-6 overflow-auto" style="height: calc(100vh - 90px);">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+    <main class="p-6 overflow-hidden flex flex-col" style="height: calc(100vh - 90px);">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
         <!-- Panel Principal: Turno Llamado -->
-        <div class="lg:col-span-2 flex flex-col gap-6">
+        <div class="lg:col-span-2 flex flex-col gap-4 min-h-0 overflow-hidden">
           <!-- Turnos Llamados -->
           <div v-if="allCalledTurns.length > 0" class="flex-1 min-h-0 flex flex-col" :class="calledTurnLayout.containerGap">
             <div
@@ -101,7 +101,7 @@
           </div>
 
           <!-- Lista de turnos en atención -->
-          <div class="bg-black/40 backdrop-blur-sm rounded-2xl p-5 shadow-xl border border-white/10">
+          <div class="bg-black/40 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-white/10 shrink-0">
             <h3 class="text-xl font-bold mb-4 text-emerald-400 uppercase tracking-wider flex items-center gap-2">
               <span class="w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></span>
               En Atención
@@ -126,8 +126,8 @@
         </div>
 
         <!-- Panel Lateral: Cola de Espera -->
-        <div class="lg:col-span-1">
-          <div class="bg-black/40 backdrop-blur-sm rounded-2xl p-5 shadow-xl border border-white/10 h-full">
+        <div class="lg:col-span-1 min-h-0 overflow-hidden">
+          <div class="bg-black/40 backdrop-blur-sm rounded-2xl p-5 shadow-xl border border-white/10 h-full overflow-auto">
             <h3 class="text-2xl font-bold mb-6 text-center text-orange-400 uppercase tracking-wider flex items-center justify-center gap-2">
               <span class="w-3 h-3 bg-orange-400 rounded-full animate-pulse"></span>
               Próximos
