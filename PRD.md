@@ -110,6 +110,7 @@ POST /api/turns
 - Campos opcionales: `patient_id` (vincula a paciente registrado), `doctor_id`, `consultorio_id`, `priority`, `notes`
 - Paciente registrado opcional: si no se proporciona `patient_id`, el turno se crea solo con nombre y teléfono
 
+GET /api/turns/display?service_code=xxx (filtro opcional por servicio)
 GET /api/turns/doctor/:id
 PUT /api/turns/:id/call (body opcional: `doctor_id`, `consultorio_id`)
 PUT /api/turns/:id/start
@@ -165,6 +166,16 @@ Esto permite funcionar con IP dinámica sin configuración adicional.
 - Snapshot inicial vía REST
 - Actualizaciones vía MQTT
 - Modo pantalla completa
+
+### /display-cg - Consulta General (publica)
+- Misma interfaz que /display pero filtrada por servicio "Consulta General" (code: consulta-general)
+- Usa query param `?service_code=consulta-general` en el endpoint `/api/turns/display`
+- Muestra subtítulo "Consulta General" en el header
+
+### /display-esp - Especialidades (publica)
+- Misma interfaz que /display pero filtrada por servicio "Especialidades" (code: especialidades)
+- Usa query param `?service_code=especialidades` en el endpoint `/api/turns/display`
+- Muestra subtítulo "Especialidades" en el header
 
 ### /display-hb - Habitaciones (publica)
 - Muestra grid con estado de todas las habitaciones

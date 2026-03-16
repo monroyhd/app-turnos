@@ -15,6 +15,20 @@ const routes = [
     meta: { public: true }
   },
   {
+    path: '/display-cg',
+    name: 'DisplayConsultaGeneral',
+    component: () => import('../views/PublicDisplayFilteredView.vue'),
+    meta: { public: true },
+    props: { serviceCode: 'consulta-general', serviceTitle: 'Consulta General' }
+  },
+  {
+    path: '/display-esp',
+    name: 'DisplayEspecialidades',
+    component: () => import('../views/PublicDisplayFilteredView.vue'),
+    meta: { public: true },
+    props: { serviceCode: 'especialidades', serviceTitle: 'Especialidades' }
+  },
+  {
     path: '/display-hb',
     name: 'DisplayHabitaciones',
     component: () => import('../views/DisplayHabitacionesView.vue'),

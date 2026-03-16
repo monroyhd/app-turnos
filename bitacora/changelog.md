@@ -1,5 +1,36 @@
 # Changelog - Sistema de Turnos Hospitalarios
 
+## [2026-03-12] - Feature: Pantallas públicas filtradas por servicio
+
+### Descripcion
+Se agregaron 2 nuevas pantallas públicas que muestran turnos filtrados por servicio específico, reutilizando el diseño de la pantalla general `/display`.
+
+### Cambios
+
+#### Backend
+- **backend/models/turn.js**: Agregado filtro `service_code` en `findAll()` para filtrar por `services.code`
+- **backend/services/turnService.js**: `getDisplayData()` ahora acepta parámetro opcional `serviceCode` y lo pasa como filtro
+- **backend/controllers/turnController.js**: `getDisplayData()` lee `req.query.service_code` y lo pasa al servicio
+
+#### Frontend
+- **frontend/src/stores/turns.js**: `fetchDisplayData()` acepta parámetro `serviceCode` y lo envía como query param
+- **frontend/src/views/PublicDisplayFilteredView.vue**: Nuevo componente basado en `PublicDisplayView.vue` que recibe `serviceCode` y `serviceTitle` como props del router
+- **frontend/src/router/index.js**: Nuevas rutas `/display-cg` (Consulta General) y `/display-esp` (Especialidades)
+
+### Rutas nuevas
+| Ruta | Servicio | service_code |
+|------|----------|-------------|
+| `/display-cg` | Consulta General | consulta-general |
+| `/display-esp` | Especialidades | especialidades |
+
+### API
+- `GET /api/turns/display` — Sin cambios, retorna todos los turnos
+- `GET /api/turns/display?service_code=consulta-general` — Solo turnos de Consulta General
+- `GET /api/turns/display?service_code=especialidades` — Solo turnos de Especialidades
+
+---
+
+
 ## [2026-03-06] - Fix: Connection leak PostgreSQL - Singleton de knex
 
 ### Problema

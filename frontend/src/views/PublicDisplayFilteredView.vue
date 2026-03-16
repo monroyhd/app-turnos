@@ -1,0 +1,392 @@
+<template>
+  <div
+    class="h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900"
+    :style="settingsStore.backgroundUrl ? { backgroundImage: `url(${settingsStore.backgroundUrl})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' } : {}"
+  >
+    <!-- Header -->
+    <header class="bg-black/30 backdrop-blur-sm py-4 px-6 flex justify-between items-center border-b border-white/10">
+      <div class="flex items-center space-x-4">
+        <img
+          v-if="settingsStore.logoUrl"
+          :src="settingsStore.logoUrl"
+          alt="Logo"
+          class="h-14 w-auto object-contain"
+        >
+        <div>
+          <h1 class="text-3xl font-bold text-white">{{ settingsStore.hospitalName }}</h1>
+          <p class="text-lg text-cyan-300 font-semibold">{{ serviceTitle }}</p>
+        </div>
+      </div>
+      <div class="text-right">
+        <p class="text-4xl font-mono text-cyan-400 font-bold">{{ currentTime }}</p>
+        <p class="text-sm text-gray-300">{{ currentDate }}</p>
+      </div>
+    </header>
+
+    <main class="p-6 overflow-hidden flex flex-col" style="height: calc(100vh - 90px);">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+        <!-- Panel Principal: Turno Llamado -->
+        <div class="lg:col-span-2 flex flex-col gap-4 min-h-0 overflow-hidden">
+          <!-- Turnos Llamados -->
+          <div v-if="allCalledTurns.length > 0" class="flex-1 min-h-0 flex flex-col" :class="calledTurnLayout.containerGap">
+            <div
+              v-for="(turn, index) in allCalledTurns"
+              :key="turn.id"
+              class="flex-1 min-h-0 rounded-3xl shadow-2xl border-4 transition-all duration-300"
+              :class="[
+                calledTurnLayout.cardPadding,
+                isNewTurn && index === 0 ? 'animate-pulse-border bg-gradient-to-br from-emerald-500 via-cyan-500 to-blue-600 border-yellow-400' : 'bg-gradient-to-br from-blue-600 via-cyan-600 to-teal-500 border-cyan-400/50'
+              ]"
+            >
+              <!-- Layout vertical para 1-2 turnos -->
+              <div v-if="!calledTurnLayout.horizontal" class="text-center h-full flex flex-col justify-center">
+                <p class="text-white/80 uppercase tracking-widest font-semibold" :class="calledTurnLayout.labelSize">TURNO</p>
+                <p
+                  class="font-black text-white drop-shadow-lg"
+                  :class="[
+                    calledTurnLayout.codeSize,
+                    isNewTurn && index === 0 ? 'animate-bounce-slow' : ''
+                  ]"
+                >
+                  {{ turn.code }}
+                </p>
+                <p class="font-semibold text-white/90" :class="calledTurnLayout.patientSize">
+                  {{ turn.patient_name || 'Paciente' }}
+                </p>
+
+                <div class="flex justify-center items-center gap-4">
+                  <div class="bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30" :class="calledTurnLayout.boxPadding">
+                    <p class="text-white/70 text-sm uppercase tracking-wider font-medium">Consultorio</p>
+                    <p class="font-black text-yellow-300 drop-shadow" :class="calledTurnLayout.consultorioSize">{{ turn.consultorio_nombre || turn.office_number || '-' }}</p>
+                  </div>
+                  <div class="bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30" :class="calledTurnLayout.boxPadding">
+                    <p class="text-white/70 text-sm uppercase tracking-wider font-medium">Doctor</p>
+                    <p class="font-bold text-white" :class="calledTurnLayout.doctorSize">{{ turn.doctor_name || '-' }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Layout horizontal compacto para 3+ turnos -->
+              <div v-else class="h-full flex items-center justify-between gap-4">
+                <div class="flex items-center gap-4 flex-1 min-w-0">
+                  <p
+                    class="font-black text-white drop-shadow-lg shrink-0"
+                    :class="[
+                      calledTurnLayout.codeSize,
+                      isNewTurn && index === 0 ? 'animate-bounce-slow' : ''
+                    ]"
+                  >
+                    {{ turn.code }}
+                  </p>
+                  <p class="font-semibold text-white/90 truncate" :class="calledTurnLayout.patientSize">
+                    {{ turn.patient_name || 'Paciente' }}
+                  </p>
+                </div>
+                <div class="flex items-center gap-3 shrink-0">
+                  <span class="text-yellow-300 font-black" :class="calledTurnLayout.consultorioSize">
+                    {{ turn.consultorio_nombre || turn.office_number || '-' }}
+                  </span>
+                  <span class="text-white/70">|</span>
+                  <span class="font-bold text-white/80 truncate max-w-[150px]" :class="calledTurnLayout.doctorSize">
+                    {{ turn.doctor_name || '-' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sin turno llamado -->
+          <div v-else class="flex-1 bg-gradient-to-br from-slate-800 to-slate-700 rounded-3xl p-8 text-center shadow-2xl border border-slate-600 flex items-center justify-center">
+            <div>
+              <div class="text-6xl mb-4">🏥</div>
+              <p class="text-5xl text-gray-400 font-light">Esperando turno...</p>
+            </div>
+          </div>
+
+          <!-- Lista de turnos en atencion -->
+          <div class="bg-black/40 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-white/10 shrink-0">
+            <h3 class="text-xl font-bold mb-4 text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+              <span class="w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></span>
+              En Atencion
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div
+                v-for="turn in inServiceTurns"
+                :key="turn.id"
+                class="bg-gradient-to-br from-emerald-800/60 to-emerald-900/60 rounded-xl p-4 text-center border-2 border-emerald-500/50 shadow-lg"
+              >
+                <p class="text-3xl font-black text-white">{{ turn.code }}</p>
+                <p v-if="turn.patient_name" class="text-sm text-white/80 truncate">{{ turn.patient_name }}</p>
+                <p class="text-sm text-emerald-300 font-medium">{{ turn.consultorio_nombre || turn.office_number || '-' }}</p>
+                <p class="text-xs text-emerald-200/70 mt-1 truncate">{{ turn.doctor_name || '' }}</p>
+              </div>
+              <p v-if="inServiceTurns.length === 0" class="col-span-full text-center text-gray-500 py-4">
+                Sin turnos en atencion
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Panel Lateral: Cola de Espera -->
+        <div class="lg:col-span-1 min-h-0 overflow-hidden">
+          <div class="bg-black/40 backdrop-blur-sm rounded-2xl p-5 shadow-xl border border-white/10 h-full overflow-auto">
+            <h3 class="text-2xl font-bold mb-6 text-center text-orange-400 uppercase tracking-wider flex items-center justify-center gap-2">
+              <span class="w-3 h-3 bg-orange-400 rounded-full animate-pulse"></span>
+              Proximos
+            </h3>
+
+            <div class="space-y-3">
+              <div
+                v-for="(turn, index) in waitingList"
+                :key="turn.id"
+                class="rounded-xl p-4 flex items-center transition-all duration-300 border"
+                :class="getWaitingItemClass(index, turn.priority)"
+              >
+                <span class="text-2xl font-black w-10 text-center" :class="index < 3 ? 'text-orange-400' : 'text-gray-500'">{{ index + 1 }}</span>
+                <div class="flex-1 ml-3">
+                  <div class="flex items-center gap-2">
+                    <span class="text-3xl font-black text-white">{{ turn.code }}</span>
+                    <span
+                      v-if="turn.priority > 0"
+                      class="text-xs px-3 py-1 rounded-full font-bold uppercase animate-pulse"
+                      :class="turn.priority === 2 ? 'bg-red-500 text-white' : 'bg-yellow-500 text-black'"
+                    >
+                      {{ turn.priority === 2 ? 'URGENTE' : 'PREFERENTE' }}
+                    </span>
+                  </div>
+                  <p v-if="turn.patient_name" class="text-sm text-gray-300 truncate">{{ turn.patient_name }}</p>
+                </div>
+                <span class="text-sm text-gray-400 font-medium">{{ turn.service_name }}</span>
+              </div>
+
+              <p v-if="waitingList.length === 0" class="text-center py-12 text-gray-500 text-xl">
+                No hay turnos en espera
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Boton para activar sonido -->
+    <button
+      v-if="!soundEnabled"
+      @click="enableSound"
+      class="fixed bottom-6 right-6 bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-3 rounded-full shadow-lg text-lg font-semibold transition-all duration-300 animate-pulse z-50"
+    >
+      Activar Sonido
+    </button>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useTurnsStore } from '../stores/turns'
+import { useSettingsStore } from '../stores/settings'
+import mqttClient from '../services/mqttClient'
+import { playNotificationChime, unlockAudio, isAudioUnlocked, tryAutoUnlock } from '../utils/notificationSound'
+
+const props = defineProps({
+  serviceCode: {
+    type: String,
+    required: true
+  },
+  serviceTitle: {
+    type: String,
+    required: true
+  }
+})
+
+const turnsStore = useTurnsStore()
+const settingsStore = useSettingsStore()
+const soundEnabled = ref(false)
+
+const currentTime = ref('')
+const currentDate = ref('')
+const lastAnnouncedTurnId = ref(null)
+const isNewTurn = ref(false)
+
+const displayData = computed(() => turnsStore.displayData)
+
+const allCalledTurns = computed(() => {
+  return displayData.value.called || []
+})
+
+const inServiceTurns = computed(() => {
+  return displayData.value.inService || []
+})
+
+const waitingList = computed(() => {
+  return displayData.value.waiting || []
+})
+
+const calledTurnLayout = computed(() => {
+  const count = allCalledTurns.value.length
+  if (count <= 1) return {
+    containerGap: 'gap-4',
+    cardPadding: 'p-8',
+    labelSize: 'text-2xl mb-2',
+    codeSize: 'text-9xl mb-4',
+    patientSize: 'text-4xl mb-8',
+    boxPadding: 'px-8 py-4',
+    consultorioSize: 'text-4xl',
+    doctorSize: 'text-xl',
+    horizontal: false
+  }
+  if (count === 2) return {
+    containerGap: 'gap-3',
+    cardPadding: 'p-4',
+    labelSize: 'text-lg mb-1',
+    codeSize: 'text-7xl mb-2',
+    patientSize: 'text-2xl mb-3',
+    boxPadding: 'px-5 py-2',
+    consultorioSize: 'text-2xl',
+    doctorSize: 'text-lg',
+    horizontal: false
+  }
+  if (count === 3) return {
+    containerGap: 'gap-2',
+    cardPadding: 'p-3',
+    labelSize: 'text-base mb-0',
+    codeSize: 'text-5xl',
+    patientSize: 'text-xl',
+    consultorioSize: 'text-lg',
+    doctorSize: 'text-base',
+    horizontal: true
+  }
+  if (count === 4) return {
+    containerGap: 'gap-2',
+    cardPadding: 'p-2',
+    labelSize: 'text-sm mb-0',
+    codeSize: 'text-4xl',
+    patientSize: 'text-lg',
+    consultorioSize: 'text-base',
+    doctorSize: 'text-sm',
+    horizontal: true
+  }
+  return {
+    containerGap: 'gap-1',
+    cardPadding: 'p-2',
+    labelSize: 'text-xs mb-0',
+    codeSize: 'text-3xl',
+    patientSize: 'text-base',
+    consultorioSize: 'text-sm',
+    doctorSize: 'text-xs',
+    horizontal: true
+  }
+})
+
+function getWaitingItemClass(index, priority) {
+  if (priority === 2) return 'bg-red-900/50 border-red-500/50'
+  if (priority === 1) return 'bg-yellow-900/30 border-yellow-500/30'
+  if (index === 0) return 'bg-gradient-to-r from-orange-600/30 to-orange-500/20 border-orange-500/50'
+  if (index < 3) return 'bg-slate-700/50 border-slate-600'
+  return 'bg-slate-800/30 border-slate-700/50 opacity-60'
+}
+
+function updateClock() {
+  const now = new Date()
+  currentTime.value = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  currentDate.value = now.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+async function enableSound() {
+  await unlockAudio()
+  soundEnabled.value = true
+  playNotificationChime()
+}
+
+function playNotificationSound() {
+  playNotificationChime()
+}
+
+function triggerNewTurnAnimation() {
+  isNewTurn.value = true
+  playNotificationSound()
+  setTimeout(() => playNotificationSound(), 800)
+  setTimeout(() => playNotificationSound(), 1600)
+  setTimeout(() => { isNewTurn.value = false }, 5000)
+}
+
+function fetchData() {
+  turnsStore.fetchDisplayData(props.serviceCode)
+}
+
+function handleMqttUpdate(data) {
+  if (data.event === 'TURN_CALLED' || data.event === 'DISPLAY_UPDATE') {
+    fetchData()
+    if (data.turn && data.turn.id !== lastAnnouncedTurnId.value) {
+      lastAnnouncedTurnId.value = data.turn.id
+      triggerNewTurnAnimation()
+    }
+  }
+  if (data.event === 'QUEUE_UPDATE') {
+    fetchData()
+  }
+}
+
+let clockInterval = null
+let refreshInterval = null
+
+onMounted(async () => {
+  updateClock()
+  clockInterval = setInterval(updateClock, 1000)
+
+  await settingsStore.loadSettings()
+  await fetchData()
+
+  mqttClient.connect()
+  mqttClient.onMessage('display', handleMqttUpdate)
+
+  const autoUnlocked = await tryAutoUnlock()
+  if (autoUnlocked) {
+    soundEnabled.value = true
+  }
+
+  refreshInterval = setInterval(fetchData, 30000)
+})
+
+onUnmounted(() => {
+  if (clockInterval) clearInterval(clockInterval)
+  if (refreshInterval) clearInterval(refreshInterval)
+  mqttClient.offMessage('display')
+})
+</script>
+
+<style scoped>
+@keyframes pulse-border {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.7), 0 0 60px rgba(6, 182, 212, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 20px rgba(250, 204, 21, 0), 0 0 100px rgba(6, 182, 212, 0.8);
+  }
+}
+
+.animate-pulse-border {
+  animation: pulse-border 1.5s ease-in-out infinite;
+}
+
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 0.5s ease-in-out infinite;
+}
+
+@keyframes flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.animate-flash {
+  animation: flash 1s ease-in-out infinite;
+}
+</style>

@@ -48,7 +48,7 @@ onMounted(async () => {
   await settingsStore.loadSettings()
 })
 
-const isPublicDisplay = computed(() => route.path === '/display')
+const isPublicDisplay = computed(() => route.meta.public && route.path !== '/login')
 
 const logout = async () => {
   await authStore.logout()

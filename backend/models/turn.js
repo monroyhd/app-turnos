@@ -40,6 +40,10 @@ const Turn = {
       query = query.where('turns.service_id', filters.service_id);
     }
 
+    if (filters.service_code) {
+      query = query.where('services.code', filters.service_code);
+    }
+
     if (filters.date) {
       query = query.whereRaw('DATE(turns.created_at) = ?', [filters.date]);
     } else if (filters.today) {

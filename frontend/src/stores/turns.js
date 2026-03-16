@@ -57,9 +57,10 @@ export const useTurnsStore = defineStore('turns', () => {
     }
   }
 
-  async function fetchDisplayData() {
+  async function fetchDisplayData(serviceCode = null) {
     try {
-      const response = await api.get('/turns/display')
+      const params = serviceCode ? `?service_code=${serviceCode}` : ''
+      const response = await api.get(`/turns/display${params}`)
       if (response.data.success) {
         displayData.value = response.data.data
       }

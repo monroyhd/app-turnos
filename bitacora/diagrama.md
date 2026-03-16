@@ -11,6 +11,8 @@ flowchart TB
         Doc[DoctorView]
         Admin[AdminView + Config Tab]
         Display[PublicDisplayView<br/>Diseno Minimalista]
+        DisplayCG[PublicDisplayFilteredView<br/>Consulta General /display-cg]
+        DisplayESP[PublicDisplayFilteredView<br/>Especialidades /display-esp]
         DisplayHB[DisplayHabitacionesView<br/>Grid de Habitaciones]
         SettingsStore[(Settings Store)]
     end
@@ -361,6 +363,8 @@ flowchart TB
         Cap[CapturistaView]
         Recep[RecepcionView]
         Disp[PublicDisplayView]
+        DispCG[DisplayConsultaGeneral]
+        DispESP[DisplayEspecialidades]
         DispHB[DisplayHabitacionesView]
     end
 

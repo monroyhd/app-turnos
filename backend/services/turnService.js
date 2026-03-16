@@ -202,23 +202,26 @@ const TurnService = {
     });
   },
 
-  async getDisplayData() {
+  async getDisplayData(serviceCode = null) {
+    const baseFilter = { today: true };
+    if (serviceCode) baseFilter.service_code = serviceCode;
+
     // Obtener turnos llamados (para mostrar en pantalla)
     const calledTurns = await Turn.findAll({
       status: TURN_STATUS.CALLED,
-      today: true
+      ...baseFilter
     });
 
     // Obtener turnos en atención (para mostrar en tarjetas)
     const inServiceTurns = await Turn.findAll({
       status: TURN_STATUS.IN_SERVICE,
-      today: true
+      ...baseFilter
     });
 
     // Obtener proximos en espera
     const waitingTurns = await Turn.findAll({
       status: TURN_STATUS.WAITING,
-      today: true
+      ...baseFilter
     });
 
     // Estadisticas del dia
