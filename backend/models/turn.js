@@ -44,6 +44,10 @@ const Turn = {
       query = query.where('services.code', filters.service_code);
     }
 
+    if (filters.service_categoria) {
+      query = query.whereRaw('LOWER(services.categoria) = LOWER(?)', [filters.service_categoria]);
+    }
+
     if (filters.date) {
       query = query.whereRaw('DATE(turns.created_at) = ?', [filters.date]);
     } else if (filters.today) {

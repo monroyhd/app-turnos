@@ -668,7 +668,7 @@ async function loadData() {
     api.get('/turns/stats'),
     api.get('/turns?today=true'),
     api.get('/doctors?is_active=true'),
-    api.get('/services?tipo=servicio'),
+    api.get('/services?tipo=servicio&is_active=true'),
     api.get('/auth/users')
   ])
 

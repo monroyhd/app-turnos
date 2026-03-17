@@ -188,7 +188,7 @@ import mqttClient from '../services/mqttClient'
 import { playNotificationChime, unlockAudio, isAudioUnlocked, tryAutoUnlock } from '../utils/notificationSound'
 
 const props = defineProps({
-  serviceCode: {
+  serviceCategoria: {
     type: String,
     required: true
   },
@@ -310,7 +310,7 @@ function triggerNewTurnAnimation() {
 }
 
 function fetchData() {
-  turnsStore.fetchDisplayData(props.serviceCode)
+  turnsStore.fetchDisplayData(null, props.serviceCategoria)
 }
 
 function handleMqttUpdate(data) {

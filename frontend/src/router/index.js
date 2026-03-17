@@ -19,14 +19,14 @@ const routes = [
     name: 'DisplayConsultaGeneral',
     component: () => import('../views/PublicDisplayFilteredView.vue'),
     meta: { public: true },
-    props: { serviceCode: 'consulta-general', serviceTitle: 'Consulta General' }
+    props: { serviceCategoria: 'consulta general', serviceTitle: 'Consulta General' }
   },
   {
     path: '/display-esp',
     name: 'DisplayEspecialidades',
     component: () => import('../views/PublicDisplayFilteredView.vue'),
     meta: { public: true },
-    props: { serviceCode: 'especialidades', serviceTitle: 'Especialidades' }
+    props: { serviceCategoria: 'especialidades', serviceTitle: 'Especialidades' }
   },
   {
     path: '/display-hb',

@@ -70,7 +70,7 @@ const Service = {
   },
 
   async delete(id) {
-    return db(TABLE).where({ id }).del();
+    return db(TABLE).where({ id }).update({ is_active: false });
   },
 
   async getDoctors(serviceId) {

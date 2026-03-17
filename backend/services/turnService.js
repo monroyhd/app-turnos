@@ -202,9 +202,10 @@ const TurnService = {
     });
   },
 
-  async getDisplayData(serviceCode = null) {
+  async getDisplayData(serviceCode = null, serviceCategoria = null) {
     const baseFilter = { today: true };
     if (serviceCode) baseFilter.service_code = serviceCode;
+    if (serviceCategoria) baseFilter.service_categoria = serviceCategoria;
 
     // Obtener turnos llamados (para mostrar en pantalla)
     const calledTurns = await Turn.findAll({

@@ -134,7 +134,8 @@ const turnController = {
   async getDisplayData(req, res, next) {
     try {
       const serviceCode = req.query.service_code || null;
-      const data = await TurnService.getDisplayData(serviceCode);
+      const serviceCategoria = req.query.service_categoria || null;
+      const data = await TurnService.getDisplayData(serviceCode, serviceCategoria);
 
       res.json({
         success: true,
